@@ -32,7 +32,7 @@ class SkillFileHandler(FileSystemEventHandler):
     bursts (editor save spam) with a short debounce per path.
     """
 
-    def __init__(self, app: "AppContext", debounce_ms: int = 250) -> None:
+    def __init__(self, app: AppContext, debounce_ms: int = 250) -> None:
         super().__init__()
         self.app = app
         self.debounce_seconds = debounce_ms / 1000.0
@@ -101,7 +101,7 @@ class SkillFileHandler(FileSystemEventHandler):
 class WatcherService:
     """Owns the watchdog Observer + handler. Start/stop as a unit."""
 
-    def __init__(self, app: "AppContext") -> None:
+    def __init__(self, app: AppContext) -> None:
         self.app = app
         self._observer: Observer | None = None  # type: ignore[type-arg]
         self._handler = SkillFileHandler(app)

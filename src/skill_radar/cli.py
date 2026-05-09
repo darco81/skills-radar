@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -41,23 +41,23 @@ def serve(
         str, typer.Option("--transport", "-t", help="Transport: stdio | http")
     ] = "stdio",
     host: Annotated[
-        Optional[str], typer.Option("--host", "-H", help="HTTP bind host (default 127.0.0.1)")
+        str | None, typer.Option("--host", "-H", help="HTTP bind host (default 127.0.0.1)")
     ] = None,
     port: Annotated[
-        Optional[int], typer.Option("--port", "-p", help="HTTP port (default 6580)")
+        int | None, typer.Option("--port", "-p", help="HTTP port (default 6580)")
     ] = None,
     path: Annotated[
-        Optional[str], typer.Option("--path", help="HTTP route path (default /mcp)")
+        str | None, typer.Option("--path", help="HTTP route path (default /mcp)")
     ] = None,
     stateless: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--stateless/--stateful",
             help="Stateless HTTP for horizontal scaling (default true)",
         ),
     ] = None,
     json_response: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--json/--sse-stream",
             help="JSON responses (default) or SSE streaming",
@@ -90,9 +90,7 @@ def serve(
 
 @app.command()
 def index(
-    rebuild: Annotated[
-        bool, typer.Option("--rebuild", help="Drop existing index first")
-    ] = False,
+    rebuild: Annotated[bool, typer.Option("--rebuild", help="Drop existing index first")] = False,
 ) -> None:
     """Scan configured paths and (re)index all SKILL.md files."""
     from skill_radar.app import AppContext
@@ -104,9 +102,9 @@ def index(
 
 @app.command(name="list")
 def list_skills(
-    tag: Annotated[Optional[str], typer.Option("--tag", help="Filter by hub-tag")] = None,
+    tag: Annotated[str | None, typer.Option("--tag", help="Filter by hub-tag")] = None,
     trust: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--trust", help="Filter by trust tier (trusted|verified|user|untrusted)"),
     ] = None,
 ) -> None:
@@ -150,7 +148,7 @@ def search(
     query: Annotated[str, typer.Argument(help="Free-text search query")],
     top_k: Annotated[int, typer.Option("--top-k", "-k", help="Number of matches")] = 5,
     tag: Annotated[
-        Optional[list[str]], typer.Option("--tag", help="Filter by hub-tag (repeatable)")
+        list[str] | None, typer.Option("--tag", help="Filter by hub-tag (repeatable)")
     ] = None,
 ) -> None:
     """Run a hybrid search against the index (mirrors `search_skills` MCP tool)."""
@@ -180,7 +178,7 @@ def search(
 @app.command(name="mini-index")
 def mini_index_cmd(
     output: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option("--output", "-o", help="Output path (default: ~/.claude/SKILLS-INDEX.md)"),
     ] = None,
     group_by: Annotated[
@@ -199,9 +197,7 @@ def mini_index_cmd(
     ctx = AppContext()
     items = ctx.store.list_all()
     if not items:
-        err_console.print(
-            "[yellow]No skills indexed - run `skill-radar index` first.[/yellow]"
-        )
+        err_console.print("[yellow]No skills indexed - run `skill-radar index` first.[/yellow]")
         raise typer.Exit(1)
     out = generate_mini_index(items, output=output, group_by=group_by)
     console.print(f"[green]✓[/green] Wrote mini-index ({len(items)} skills) to {out}")

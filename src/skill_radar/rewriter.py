@@ -57,6 +57,9 @@ class OllamaRewriter:
         model: str = "gemma4:e4b",
         timeout: float = 5.0,
     ) -> None:
+        if not url.startswith(("http://", "https://")):
+            msg = f"Rewriter URL must use http:// or https:// scheme, got: {url!r}"
+            raise ValueError(msg)
         self.url = url.rstrip("/")
         self.model = model
         self.timeout = timeout
@@ -74,12 +77,13 @@ class OllamaRewriter:
                 },
             }
             data = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(
+            # Scheme is validated to be http/https in __init__; safe to ignore S310.
+            req = urllib.request.Request(  # noqa: S310
                 f"{self.url}/api/generate",
                 data=data,
                 headers={"Content-Type": "application/json"},
             )
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:  # noqa: S310
                 body = resp.read().decode("utf-8")
             parsed = json.loads(body)
             rewritten = (parsed.get("response") or "").strip()

@@ -160,9 +160,7 @@ def test_parse_skill_file_rejects_no_frontmatter(tmp_path):
 def test_parse_skill_file_size_limit(tmp_path):
     skill = tmp_path / "huge" / "SKILL.md"
     skill.parent.mkdir()
-    skill.write_text(
-        "---\nname: huge\ndescription: too big.\n---\n\n" + "x" * 200_000
-    )
+    skill.write_text("---\nname: huge\ndescription: too big.\n---\n\n" + "x" * 200_000)
     rec = parse_skill_file(skill, trusted_paths=[], max_size_kb=64)
     assert rec is None
 

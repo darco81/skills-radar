@@ -6,7 +6,7 @@ Every SKILL.md is treated as adversarial input. See SPEC §5.
 from __future__ import annotations
 
 import re
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 RESERVED_NAMES = frozenset({"anthropic", "claude"})
@@ -29,7 +29,7 @@ INJECTION_PATTERNS: tuple[re.Pattern[str], ...] = (
 LIVE_EXEC_PATTERN = re.compile(r"!`[^`]+`")
 
 
-class TrustTier(str, Enum):
+class TrustTier(StrEnum):
     """Trust tiers - see SPEC §5."""
 
     TRUSTED = "trusted"
@@ -92,7 +92,9 @@ def determine_trust_tier(skill_path: Path, trusted_paths: list[Path]) -> TrustTi
         except (ValueError, OSError):
             continue
 
-    plugin_root = (Path.home() / ".claude" / "plugins" / "cache" / "claude-plugins-official").resolve()
+    plugin_root = (
+        Path.home() / ".claude" / "plugins" / "cache" / "claude-plugins-official"
+    ).resolve()
     try:
         if skill_path.is_relative_to(plugin_root):
             return TrustTier.VERIFIED

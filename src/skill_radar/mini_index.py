@@ -84,7 +84,9 @@ def generate_mini_index(
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    logger.info("Wrote mini-index (%d skills, %d categories) to %s", len(skills), len(grouped), out_path)
+    logger.info(
+        "Wrote mini-index (%d skills, %d categories) to %s", len(skills), len(grouped), out_path
+    )
     return out_path
 
 

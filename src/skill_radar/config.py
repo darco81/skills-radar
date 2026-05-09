@@ -98,7 +98,7 @@ class Config(BaseModel):
         return [_expand(p) for p in v]
 
     @classmethod
-    def load(cls, path: Path | None = None) -> "Config":
+    def load(cls, path: Path | None = None) -> Config:
         """Load from YAML file, or return defaults if missing."""
         if path is None:
             path = cls.default_path()
