@@ -49,11 +49,20 @@ class RewriterConfig(BaseModel):
     enabled: bool = False
 
 
+class RerankerConfig(BaseModel):
+    backend: str = "none"  # 'none' | 'ollama' | 'mlx' (mlx not yet implemented)
+    model: str = "gemma4:e4b"
+    url: str = "http://localhost:11434"
+    timeout: float = 8.0
+    enabled: bool = False
+
+
 class RetrievalConfig(BaseModel):
     hybrid_weight_semantic: float = 0.7
     hybrid_weight_lexical: float = 0.3
     default_top_k: int = 5
     rewriter: RewriterConfig = Field(default_factory=RewriterConfig)
+    reranker: RerankerConfig = Field(default_factory=RerankerConfig)
 
     @field_validator("hybrid_weight_semantic", "hybrid_weight_lexical")
     @classmethod

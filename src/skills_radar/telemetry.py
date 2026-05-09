@@ -49,7 +49,7 @@ class Telemetry:
             logger.info("Telemetry enabled at %s", self.db_path)
 
     @contextmanager
-    def _conn(self) -> Any:
+    def _conn(self) -> Any:  # noqa: ANN401 - sqlite3 connection generator
         conn = sqlite3.connect(self.db_path, timeout=2.0)
         try:
             yield conn

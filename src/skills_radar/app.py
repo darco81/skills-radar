@@ -15,6 +15,7 @@ from rank_bm25 import BM25Okapi
 from skills_radar.config import Config
 from skills_radar.embedder import EmbedderProtocol, make_embedder
 from skills_radar.indexer import SkillRecord, find_skill_files, parse_skill_file
+from skills_radar.reranker import OVERSAMPLE_WHEN_ENABLED, Reranker, make_reranker
 from skills_radar.rewriter import QueryRewriter, make_rewriter
 from skills_radar.sanitize import TrustTier
 from skills_radar.store import SkillStore
@@ -40,9 +41,21 @@ class AppContext:
         self._bm25_ids: list[str] = []
         self._rebuild_bm25_from_store()
         self.rewriter: QueryRewriter = self._build_rewriter()
+        self.reranker: Reranker = self._build_reranker()
         self.telemetry: Telemetry = Telemetry(
             enabled=self.config.telemetry.enabled,
             db_path=self.config.telemetry.db_path,
+        )
+
+    def _build_reranker(self) -> Reranker:
+        rcfg = self.config.retrieval.reranker
+        if not rcfg.enabled:
+            return make_reranker("none")
+        return make_reranker(
+            rcfg.backend,
+            url=rcfg.url,
+            model=rcfg.model,
+            timeout=rcfg.timeout,
         )
 
     def _build_rewriter(self) -> QueryRewriter:
@@ -164,7 +177,18 @@ class AppContext:
             ]
 
         fused.sort(key=lambda r: r["score"], reverse=True)
-        result = fused[:top_k]
+
+        # Optional reranker over a wider candidate pool - only if enabled and
+        # the user requested few enough results that reranking is meaningful.
+        rerank_enabled = self.config.retrieval.reranker.enabled
+        if rerank_enabled and fused:
+            pool_size = max(top_k, OVERSAMPLE_WHEN_ENABLED)
+            pool = fused[:pool_size]
+            reranked = self.reranker.rerank(query, pool)
+            result = reranked[:top_k]
+        else:
+            result = fused[:top_k]
+
         self.telemetry.log_search(
             query=query,
             matches=result,
@@ -287,7 +311,7 @@ def _split_tags(s: str) -> set[str]:
     return {t.strip().lower() for t in s.split(",") if t.strip()}
 
 
-def _make_store(config: Config, embedder_dim: int) -> Any:
+def _make_store(config: Config, embedder_dim: int) -> Any:  # noqa: ANN401 - duck-typed
     """Factory: select store backend per config."""
     backend = (config.store.backend or "chromadb").lower()
     if backend == "chromadb":

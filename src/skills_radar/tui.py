@@ -216,10 +216,11 @@ def run_tui(refresh_seconds: float = REFRESH_DEFAULT) -> None:
 
     if not ctx.config.telemetry.enabled:
         console.print(
-            "[yellow]⚠  Telemetry is disabled in config - recent events stream will be empty.[/yellow]"
+            "[yellow]⚠  Telemetry disabled in config - recent events will be empty.[/yellow]"
         )
         console.print(
-            f"[dim]Enable in {Config.default_path()} (telemetry.enabled: true) for live events.[/dim]"
+            f"[dim]Enable in {Config.default_path()} "
+            "(telemetry.enabled: true) for live events.[/dim]"
         )
 
     try:
