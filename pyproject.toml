@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "skills-radar"
-version = "0.3.0a2"
+version = "0.4.0a0"
 description = "Lazy-loading skill discovery for Claude Code via MCP - mirrors Anthropic's Tool Search Tool pattern for Skills."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -50,6 +50,7 @@ dependencies = [
 mlx = ["mlx>=0.15", "mlx-lm>=0.14", "mlx-embeddings>=0.0.3"]
 qdrant = ["qdrant-client>=1.10"]
 faiss = ["faiss-cpu>=1.8", "numpy>=1.26"]
+signing = ["cryptography>=42.0"]
 voyage = ["voyageai>=0.3"]
 openai = ["openai>=1.40"]
 dev = [

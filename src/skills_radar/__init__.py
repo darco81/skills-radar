@@ -4,5 +4,5 @@ Mirrors Anthropic's Tool Search Tool pattern for Skills.
 See SPEC.md for architecture and design decisions.
 """
 
-__version__ = "0.3.0a2"
+__version__ = "0.4.0a0"
 __all__ = ["__version__"]

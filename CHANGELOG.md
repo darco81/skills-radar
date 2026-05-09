@@ -17,6 +17,37 @@ All notable changes to skills-radar are documented in this file. Format follows 
 - Crypto signing for VERIFIED tier
 - LLM-based prompt-injection scanner (extends regex catalog)
 
+## [v0.4.0a0] - 2026-05-09
+
+### Added - F5 backlog complete
+
+All 8 backlog items shipped in a single alpha:
+
+1. **Hub-tags taxonomy** (`docs/hub-tags-taxonomy.md`) - recommended canonical 12: `a11y`, `perf`, `qa`, `dev`, `content`, `ml`, `ux`, `devops`, `docs`, `infra`, `sec`, `ops`. Per-tag definition + real corpus examples + how-to-apply rules + anti-patterns table + skills-radar consumption (filtered search, mini-index grouping) + future evolution rules + migration path.
+
+2. **Sandbox bundled_files** (`src/skills_radar/sandbox.py`) - `load_skill(name, sandbox=True)` reads bundled files (one level deep from SKILL.md) with safe-extension whitelist, per-file + total size caps, path-traversal rejection, symlink rejection, UTF-8 decode validation. Same sanitization pipeline as SKILL.md body. 12 new tests.
+
+3. **LLM injection scanner** (`src/skills_radar/injection_scanner.py`) - optional second-layer classifier that complements the regex catalog with a small local LLM (Ollama or MLX). Three backends: `none` (default), `ollama`, `mlx`. Robust JSON extraction with regex fallback. Resilient: any error degrades to "safe" (regex catalog already ran). 13 new tests.
+
+4. **FAISS store backend** (`src/skills_radar/faiss_store.py`) - third pluggable vector store. FAISS IndexFlatIP with L2-normalized vectors (cosine equiv). Single dir with `faiss.index` + `meta.json`, no SQLite, no network. Tombstone-based delete. ~30 MB faiss-cpu wheel - lightest backend. Live-verified end-to-end.
+
+5. **OpenAI embedder** (`src/skills_radar/embedder.py::OpenAIEmbedder`) - cloud BYOK via OPENAI_API_KEY. Default model `text-embedding-3-small` (1536-dim, ~$0.02 / 1M tokens). Excellent multilingual quality.
+
+6. **Voyage embedder** (`src/skills_radar/embedder.py::VoyageEmbedder`) - cloud BYOK via VOYAGE_API_KEY. Default `voyage-3-lite` (512-dim). Specialized for retrieval, outperforms text-embedding-3 on most public benchmarks. Uses Voyage's distinct `input_type` for queries vs documents.
+
+7. **GitHub auto-discovery** (`src/skills_radar/github_import.py` + CLI) - `skills-radar import-github org/repo` shallow-clones a public repo, finds SKILL.md files, copies them to `~/.local/share/skills-radar/imported/<org>--<repo>/...` (UNTRUSTED tier). Supports `--branch`, `--subpath`, `--yes`, `--dry-run`. Library mode requires explicit yes=True or dry_run=True for safety. Live-verified against `anthropics/skills` (18 candidate SKILL.md files listed in dry-run).
+
+8. **Crypto signing for VERIFIED tier** (`src/skills_radar/signing.py`) - Ed25519 sign/verify path. SKILL.md signed → `SKILL.md.sig` JSON sidecar with `{version, key_id, algo, content_hash, signature}`. Verifier validates signature against trust_roots dict (key_id → base64 raw public-key bytes). Independent of the path-based VERIFIED tier (which still works for plugin cache); now any signed skill at any path can promote to VERIFIED. 7 new tests covering generate / sign / verify round-trip, missing sig, unknown key, hash mismatch (tamper detection), bad signature with wrong key, bad JSON in sig file. Opt-in via `[signing]` extras (cryptography>=42).
+
+### Changed
+- `make_embedder()` factory now dispatches: `sentence-transformers` / `mlx` / `openai` / `voyage`. ValueError on unknown backend lists all options with extras hint.
+- `_make_store()` factory dispatches: `chromadb` / `qdrant` / `faiss`.
+- `make_scanner()` factory dispatches: `none` / `ollama` / `mlx`.
+- `pyproject.toml` extras: `mlx`, `qdrant`, `voyage`, `openai`, `faiss`, `signing` - every cloud / heavy-deps backend is opt-in.
+
+### Tests
+**95/95 pass** (88 prior + 7 signing) - ruff clean, format clean. Coverage 43%.
+
 ## [v0.3.0a2] - 2026-05-09
 
 ### Added
@@ -123,7 +154,8 @@ All notable changes to skills-radar are documented in this file. Format follows 
 - SPEC.md (~2300 words, 15 sections), README.md, architecture deep-dive, onboarding 8-step guide.
 - Verified working: 60 skills indexed (after dedup); `wcag accessibility audit` → a11y-orchestrator (0.79); `memory leak in my Vue app` → perf-vue-runtime (0.48).
 
-[Unreleased]: https://github.com/dar-kow/skills-radar/compare/v0.3.0a2...HEAD
+[Unreleased]: https://github.com/dar-kow/skills-radar/compare/v0.4.0a0...HEAD
+[v0.4.0a0]: https://github.com/dar-kow/skills-radar/compare/v0.3.0a2...v0.4.0a0
 [v0.3.0a2]: https://github.com/dar-kow/skills-radar/compare/v0.3.0a1...v0.3.0a2
 [v0.3.0a1]: https://github.com/dar-kow/skills-radar/compare/v0.3.0a0...v0.3.0a1
 [v0.3.0a0]: https://github.com/dar-kow/skills-radar/compare/v0.2.0...v0.3.0a0
