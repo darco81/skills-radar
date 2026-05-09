@@ -32,7 +32,11 @@ class StoreConfig(BaseModel):
 
 class TransportConfig(BaseModel):
     mode: str = "stdio"
+    http_host: str = "127.0.0.1"
     http_port: int = 6580
+    http_path: str = "/mcp"
+    stateless_http: bool = True
+    json_response: bool = True
 
 
 class RetrievalConfig(BaseModel):

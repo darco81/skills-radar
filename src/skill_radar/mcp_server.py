@@ -134,8 +134,21 @@ def _strip_cli_only_fields(frontmatter: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in frontmatter.items() if k not in _CLI_ONLY_FIELDS}
 
 
+def _maybe_start_watcher() -> None:
+    app = _get_app()
+    from skill_radar.watcher import WatcherService
+
+    watcher = WatcherService(app)
+    watcher.start()
+    logger.info("Hot-reload enabled (watching %d roots)", len(app.config.paths))
+
+
 def run_stdio(*, watch: bool = False) -> None:
-    """Entry point for stdio transport."""
+    """Entry point for stdio transport.
+
+    Use for: local Claude Code dev, single-client subprocess. Stdout is
+    reserved for JSON-RPC; all logs go to stderr.
+    """
     logging.basicConfig(
         stream=sys.stderr,
         level=logging.INFO,
@@ -144,11 +157,65 @@ def run_stdio(*, watch: bool = False) -> None:
     logger.info("Starting skill-radar v%s on stdio transport", __version__)
 
     if watch:
-        from skill_radar.watcher import WatcherService
-
-        app = _get_app()
-        watcher = WatcherService(app)
-        watcher.start()
-        logger.info("Hot-reload enabled (watching %d roots)", len(app.config.paths))
+        _maybe_start_watcher()
 
     mcp.run(transport="stdio")
+
+
+def run_http(
+    *,
+    host: str | None = None,
+    port: int | None = None,
+    path: str | None = None,
+    stateless: bool | None = None,
+    json_response: bool | None = None,
+    watch: bool = False,
+) -> None:
+    """Entry point for Streamable HTTP transport.
+
+    Use for: production, Docker, horizontal scaling, multi-client. Pair
+    `stateless_http=True` + `json_response=True` for a horizontally
+    scalable deployment behind a load balancer (per MCP SDK guidance).
+    """
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+    cfg = _get_app().config.transport
+    use_host = host or cfg.http_host
+    use_port = port or cfg.http_port
+    use_path = path or cfg.http_path
+    use_stateless = cfg.stateless_http if stateless is None else stateless
+    use_json = cfg.json_response if json_response is None else json_response
+
+    # FastMCP takes ALL transport params in the constructor - re-create the
+    # global with HTTP-tuned flags and re-register both tools.
+    global mcp  # noqa: PLW0603
+    from mcp.server.fastmcp import FastMCP as _FastMCP
+
+    new_mcp = _FastMCP(
+        "skill-radar",
+        instructions=getattr(mcp, "instructions", None),
+        host=use_host,
+        port=use_port,
+        streamable_http_path=use_path,
+        stateless_http=use_stateless,
+        json_response=use_json,
+    )
+    new_mcp.tool()(search_skills)
+    new_mcp.tool()(load_skill)
+    mcp = new_mcp
+
+    logger.info(
+        "Starting skill-radar v%s on streamable-http at http://%s:%d%s",
+        __version__,
+        use_host,
+        use_port,
+        use_path,
+    )
+    logger.info("Mode: stateless=%s, json_response=%s", use_stateless, use_json)
+
+    if watch:
+        _maybe_start_watcher()
+
+    mcp.run(transport="streamable-http")

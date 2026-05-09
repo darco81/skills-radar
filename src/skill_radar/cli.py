@@ -40,21 +40,49 @@ def serve(
     transport: Annotated[
         str, typer.Option("--transport", "-t", help="Transport: stdio | http")
     ] = "stdio",
-    port: Annotated[int, typer.Option("--port", "-p", help="HTTP port")] = 6580,
+    host: Annotated[
+        Optional[str], typer.Option("--host", "-H", help="HTTP bind host (default 127.0.0.1)")
+    ] = None,
+    port: Annotated[
+        Optional[int], typer.Option("--port", "-p", help="HTTP port (default 6580)")
+    ] = None,
+    path: Annotated[
+        Optional[str], typer.Option("--path", help="HTTP route path (default /mcp)")
+    ] = None,
+    stateless: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--stateless/--stateful",
+            help="Stateless HTTP for horizontal scaling (default true)",
+        ),
+    ] = None,
+    json_response: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--json/--sse-stream",
+            help="JSON responses (default) or SSE streaming",
+        ),
+    ] = None,
     watch: Annotated[
         bool, typer.Option("--watch/--no-watch", help="Hot-reload on SKILL.md changes")
     ] = False,
 ) -> None:
-    """Start the MCP server."""
+    """Start the MCP server (stdio for local Claude Code, http for production)."""
     if transport == "stdio":
         from skill_radar.mcp_server import run_stdio
 
         run_stdio(watch=watch)
     elif transport == "http":
-        err_console.print(
-            "[yellow]HTTP transport ships in a later F2 commit - use stdio for now.[/yellow]"
+        from skill_radar.mcp_server import run_http
+
+        run_http(
+            host=host,
+            port=port,
+            path=path,
+            stateless=stateless,
+            json_response=json_response,
+            watch=watch,
         )
-        raise typer.Exit(1)
     else:
         err_console.print(f"[red]Unknown transport: {transport!r}[/red]")
         raise typer.Exit(2)
