@@ -324,7 +324,11 @@ def _make_store(config: Config, embedder_dim: int) -> Any:  # noqa: ANN401 - duc
             collection=config.store.qdrant_collection,
             dim=embedder_dim,
         )
-    msg = f"Unsupported store backend: {backend!r}. Use 'chromadb' or 'qdrant'."
+    if backend == "faiss":
+        from skills_radar.faiss_store import FAISSStore
+
+        return FAISSStore(path=config.store.path, dim=embedder_dim)
+    msg = f"Unsupported store backend: {backend!r}. Use 'chromadb' / 'qdrant' / 'faiss'."
     raise ValueError(msg)
 
 
