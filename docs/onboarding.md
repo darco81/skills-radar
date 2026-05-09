@@ -22,7 +22,7 @@ uv pip install skills-radar
 ### Option B: from source (current)
 
 ```bash
-git clone https://github.com/dar-kow/skills-radar
+git clone https://github.com/darco81/skills-radar
 cd skills-radar
 uv venv
 source .venv/bin/activate

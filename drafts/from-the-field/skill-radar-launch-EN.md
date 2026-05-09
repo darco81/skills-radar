@@ -60,7 +60,7 @@ Stack matches Anthropic's published guidance:
 - Air-gapped friendly - pre-baked Docker image, offline HF Hub flags
 - Multi-client - Claude Code, Cursor, Claude Desktop, custom MCP agents
 
-Repo: **github.com/dar-kow/skills-radar** (link in first comment for the algorithm gods)
+Repo: **github.com/darco81/skills-radar** (link in first comment for the algorithm gods)
 
 ## Call to action
 

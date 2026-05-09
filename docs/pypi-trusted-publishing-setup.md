@@ -9,7 +9,7 @@
 **Trusted Publishing** to oficjalny standard PyPI od 2023. Zamiast generować długoterminowy token API i wklejać go do GitHub Secrets (gdzie może wyciec), PyPI ufa konkretnemu workflow w konkretnym repo na konkretnej branchy / w konkretnym environment. OAuth pod spodem - krótki token wystawiony tylko na czas tego jednego buildu.
 
 **Twój stan dzisiaj:**
-- Repo `dar-kow/skills-radar` jest publiczne ✅
+- Repo `darco81/skills-radar` jest publiczne ✅
 - Workflow `.github/workflows/publish.yml` jest gotowy i czeka na tagi ✅
 - 8 tagów już są na zdalnym repo ✅
 - **PyPI nie wie jeszcze że ma temu repo zaufać** - to jest dokładnie ten setup poniżej
@@ -39,7 +39,7 @@ Wypełnij **dokładnie tak**:
 | Pole | Wartość |
 |---|---|
 | **PyPI Project Name** | `skills-radar` |
-| **Owner** | `darco81` ⚠️ canonical GitHub username (NOT vanity `dar-kow`) |
+| **Owner** | `darco81` |
 | **Repository name** | `skills-radar` |
 | **Workflow name** | `publish.yml` |
 | **Environment name** | `pypi` |
@@ -56,9 +56,9 @@ Powinieneś zobaczyć: **"Pending publisher added"**.
 
 ### 2a. Wejdź w Settings repo
 
-→ https://github.com/dar-kow/skills-radar/settings/environments
+→ https://github.com/darco81/skills-radar/settings/environments
 
-(Lub: Twoje repo `dar-kow/skills-radar` → zakładka **Settings** (nie Issues/PRs/etc., **Settings** na samym końcu) → w lewym menu **"Environments"**.)
+(Lub: Twoje repo `darco81/skills-radar` → zakładka **Settings** (nie Issues/PRs/etc., **Settings** na samym końcu) → w lewym menu **"Environments"**.)
 
 ### 2b. Nowe środowisko
 
@@ -87,7 +87,7 @@ Tag `v0.4.0a0` JEST już na remote, ale został pushnięty **przed** setupem PyP
 
 ### Opcja A - re-run failed workflow (szybsza)
 
-→ https://github.com/dar-kow/skills-radar/actions/workflows/publish.yml
+→ https://github.com/darco81/skills-radar/actions/workflows/publish.yml
 
 Znajdź failed run dla v0.4.0a0 → otwórz → **"Re-run all jobs"** (góra po prawej).
 
@@ -96,7 +96,7 @@ Znajdź failed run dla v0.4.0a0 → otwórz → **"Re-run all jobs"** (góra po 
 W terminalu:
 
 ```bash
-cd ~/dev/dar-kow/skills-radar
+cd ~/dev/darco81/skills-radar
 git tag -a v0.4.0a1 -m "v0.4.0a1 - first PyPI release with Trusted Publishing"
 git push --tags
 ```
@@ -107,7 +107,7 @@ To uruchomi fresh workflow run dla nowego tagu.
 
 Po ~3-5 min:
 
-1. → https://github.com/dar-kow/skills-radar/actions - workflow `Publish to PyPI` powinien być **zielony ✓**
+1. → https://github.com/darco81/skills-radar/actions - workflow `Publish to PyPI` powinien być **zielony ✓**
 2. → https://pypi.org/project/skills-radar/ - paczka powinna być widoczna z najnowszą wersją
 
 Z czystej VM / venv:
@@ -162,8 +162,8 @@ Zero kopiowania tokenów. Zero ręcznej publikacji. Zero `twine upload`.
 Gdyby ktokolwiek inny chciał kontynuować ten setup (np. Claude Desktop wzieł rolę maintainera publish flow), wystarczą **3 strony URL**:
 
 1. https://pypi.org/manage/account/publishing/ - sprawdzić że pending publisher istnieje
-2. https://github.com/dar-kow/skills-radar/settings/environments - sprawdzić środowisko `pypi`
-3. https://github.com/dar-kow/skills-radar/actions/workflows/publish.yml - re-run / monitor publish
+2. https://github.com/darco81/skills-radar/settings/environments - sprawdzić środowisko `pypi`
+3. https://github.com/darco81/skills-radar/actions/workflows/publish.yml - re-run / monitor publish
 
 ---
 

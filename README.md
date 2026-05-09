@@ -20,7 +20,7 @@ Pick one based on your workflow:
 One container, every Claude Code session in every project connects to the same `http://localhost:6580/mcp`. Container has persistent ChromaDB volume + bind-mounted skill paths read-only + watcher on (baked config). Healthy in ~1 second after `docker compose up`.
 
 ```bash
-git clone https://github.com/dar-kow/skills-radar
+git clone https://github.com/darco81/skills-radar
 cd skills-radar
 docker compose up -d --build
 

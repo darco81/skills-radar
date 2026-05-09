@@ -60,7 +60,7 @@ Stack zgodny z opublikowanymi best practices Anthropic:
 - Air-gapped friendly - pre-baked Docker image, offline flagi HF Hub
 - Multi-client - Claude Code, Cursor, Claude Desktop, custom agenty MCP
 
-Repo: **github.com/dar-kow/skills-radar** (link w pierwszym komentarzu pod EN postem - algorytm tak chce)
+Repo: **github.com/darco81/skills-radar** (link w pierwszym komentarzu pod EN postem - algorytm tak chce)
 
 ## Call to action
 
@@ -73,6 +73,6 @@ Jak rozwiązałeś to inaczej - pokazuj. Na dobre pomysły nie ma monopolu, a pr
 ## Notatki przed publikacją
 
 - Wrzucić jako pierwszy komentarz pod EN postem (link nie idzie w treści głównej - ranking algorytmu LI)
-- W tym komentarzu link do repo + krótka linijka po PL: "Pełny opis po angielsku w poście wyżej. Repo: github.com/dar-kow/skills-radar"
+- W tym komentarzu link do repo + krótka linijka po PL: "Pełny opis po angielsku w poście wyżej. Repo: github.com/darco81/skills-radar"
 - Drugi komentarz wewnątrz wątku PL (po 30 min): "Pełna architektura w SPEC.md w repo, ~2300 słów, bez waty"
 - Voice: peer-level senior engineers PL TI scene, nie juniorów, nie C-level. Brak korpomowy.

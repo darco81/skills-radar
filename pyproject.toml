@@ -66,11 +66,11 @@ dev = [
 skills-radar = "skills_radar.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/dar-kow/skills-radar"
-Documentation = "https://github.com/dar-kow/skills-radar/tree/main/docs"
-Repository = "https://github.com/dar-kow/skills-radar"
-Issues = "https://github.com/dar-kow/skills-radar/issues"
-Changelog = "https://github.com/dar-kow/skills-radar/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/darco81/skills-radar"
+Documentation = "https://github.com/darco81/skills-radar/tree/main/docs"
+Repository = "https://github.com/darco81/skills-radar"
+Issues = "https://github.com/darco81/skills-radar/issues"
+Changelog = "https://github.com/darco81/skills-radar/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/skills_radar"]

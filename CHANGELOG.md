@@ -154,11 +154,11 @@ All 8 backlog items shipped in a single alpha:
 - SPEC.md (~2300 words, 15 sections), README.md, architecture deep-dive, onboarding 8-step guide.
 - Verified working: 60 skills indexed (after dedup); `wcag accessibility audit` → a11y-orchestrator (0.79); `memory leak in my Vue app` → perf-vue-runtime (0.48).
 
-[Unreleased]: https://github.com/dar-kow/skills-radar/compare/v0.4.0a0...HEAD
-[v0.4.0a0]: https://github.com/dar-kow/skills-radar/compare/v0.3.0a2...v0.4.0a0
-[v0.3.0a2]: https://github.com/dar-kow/skills-radar/compare/v0.3.0a1...v0.3.0a2
-[v0.3.0a1]: https://github.com/dar-kow/skills-radar/compare/v0.3.0a0...v0.3.0a1
-[v0.3.0a0]: https://github.com/dar-kow/skills-radar/compare/v0.2.0...v0.3.0a0
-[v0.2.0]: https://github.com/dar-kow/skills-radar/compare/v0.2.0a1...v0.2.0
-[v0.2.0a0]: https://github.com/dar-kow/skills-radar/compare/v0.1.0a0...v0.2.0a0
-[v0.1.0a0]: https://github.com/dar-kow/skills-radar/releases/tag/v0.1.0a0
+[Unreleased]: https://github.com/darco81/skills-radar/compare/v0.4.0a0...HEAD
+[v0.4.0a0]: https://github.com/darco81/skills-radar/compare/v0.3.0a2...v0.4.0a0
+[v0.3.0a2]: https://github.com/darco81/skills-radar/compare/v0.3.0a1...v0.3.0a2
+[v0.3.0a1]: https://github.com/darco81/skills-radar/compare/v0.3.0a0...v0.3.0a1
+[v0.3.0a0]: https://github.com/darco81/skills-radar/compare/v0.2.0...v0.3.0a0
+[v0.2.0]: https://github.com/darco81/skills-radar/compare/v0.2.0a1...v0.2.0
+[v0.2.0a0]: https://github.com/darco81/skills-radar/compare/v0.1.0a0...v0.2.0a0
+[v0.1.0a0]: https://github.com/darco81/skills-radar/releases/tag/v0.1.0a0

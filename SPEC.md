@@ -72,7 +72,7 @@ Hybrid retrieval over (description + when_to_use), NEVER over body. Returns:
       "description": "WCAG toolkit orchestrator - front door for sdet-wcag-toolkit operations.",
       "trust": "user",
       "score": 0.84,
-      "scope": "project:/Users/dariusz/dev/dar-kow/sdet-wcag-toolkit"
+      "scope": "project:/Users/dariusz/dev/darco81/sdet-wcag-toolkit"
     },
     ...
   ],
@@ -92,7 +92,7 @@ Fetches sanitized SKILL.md content. Returns:
   "body_markdown": "...",
   "trust": "user",
   "bundled_files": ["./tools/wcag-runner.py"],
-  "scope": "project:/Users/dariusz/dev/dar-kow/sdet-wcag-toolkit",
+  "scope": "project:/Users/dariusz/dev/darco81/sdet-wcag-toolkit",
   "warnings": []
 }
 ```
@@ -291,7 +291,7 @@ Watchdog uses kernel-level FS events (`kqueue` on macOS, `inotify` on Linux). Pa
 ## 11. Public Release Plan
 
 ### Repo
-- `github.com/sdet-it/skills-radar` (or personal `github.com/dar-kow/skills-radar`)
+- `github.com/sdet-it/skills-radar` (or personal `github.com/darco81/skills-radar`)
 - License: **MIT**
 - Branding: minimal, neutral - no SDET-specific lock-in
 
@@ -356,7 +356,7 @@ Watchdog uses kernel-level FS events (`kqueue` on macOS, `inotify` on Linux). Pa
 
 ## 15. Open Questions
 
-1. **Repo home** - `github.com/sdet-it/skills-radar` (org) or `github.com/dar-kow/skills-radar` (personal)?
+1. **Repo home** - `github.com/sdet-it/skills-radar` (org) or `github.com/darco81/skills-radar` (personal)?
 2. **Trust registry** - for VERIFIED tier, do we host a JSON manifest in repo, or punt to v0.2?
 3. **Tag taxonomy** - should we publish a recommended `hub-tags` vocabulary (`a11y`, `perf`, `content`, `dev`, `qa`, ...) or let community converge?
 4. **Telemetry** - local-only opt-in stats from start, or post-1.0?

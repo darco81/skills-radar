@@ -5,7 +5,7 @@ Thanks for considering a contribution. This project's goal is to be a small, sha
 ## Quick start
 
 ```bash
-git clone https://github.com/dar-kow/skills-radar
+git clone https://github.com/darco81/skills-radar
 cd skills-radar
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"

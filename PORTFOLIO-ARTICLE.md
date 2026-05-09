@@ -2,7 +2,7 @@
 
 > **Format:** standalone case study for portfolio.sdet.it. Not a From the Field episode. ~2500 words EN. Voice: peer-level senior engineers, no corporate-speak.
 > **Status:** draft v1 - needs voice pass + screenshot insertion before publication.
-> **Repo:** `github.com/dar-kow/skills-radar` (push pending Claude Desktop decision)
+> **Repo:** `github.com/darco81/skills-radar` (push pending Claude Desktop decision)
 
 ---
 
@@ -226,7 +226,7 @@ claude mcp add skills-radar -- skills-radar serve --transport stdio --watch
 
 Restart Claude Code. `/mcp` shows skills-radar connected. Run `skills-radar mini-index` and import `~/.claude/SKILLS-INDEX.md` into your global `CLAUDE.md`. That's the full setup.
 
-Source: **github.com/dar-kow/skills-radar**. MIT license. Built one Friday in May 2026 between other things.
+Source: **github.com/darco81/skills-radar**. MIT license. Built one Friday in May 2026 between other things.
 
 ## Notes for self before publishing
 
