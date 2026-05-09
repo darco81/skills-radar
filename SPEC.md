@@ -256,6 +256,38 @@ sanitization:
   reject_reserved_names: ["anthropic", "claude"]
 ```
 
+## 10b. Deployment modes (added v0.3.0a2)
+
+Two supported modes:
+
+### Mode A - Docker Desktop running 24/7
+
+Container running cały czas (`docker compose up -d`), every Claude Code session in every project connects to the same `http://localhost:6580/mcp`. Container has persistent ChromaDB volume, bind-mounted skill paths read-only, watcher on (baked config has `watcher.enabled: true`). One MCP registration per machine:
+
+```bash
+claude mcp add --transport http skills-radar http://localhost:6580/mcp
+```
+
+Tradeoff: cross-platform infrastructure, easy recovery, but Linux container can't reach Apple GPU → **no MLX path inside the container**. Stack inside is sentence-transformers + ChromaDB (+ optional Qdrant + Ollama if reachable from container).
+
+### Mode B - Native install (100% local Apple Silicon MLX stack)
+
+Bare-metal Python install, stdio subprocess per CC session, OR long-running HTTP server (launchd plist or `nohup` for "always running" parity with Docker). Full MLX path: embedder + rewriter + reranker. **Mac arm64 only.**
+
+```bash
+pip install 'skills-radar[mlx]'
+skills-radar serve --transport http --watch &
+claude mcp add --transport http skills-radar http://localhost:6580/mcp
+```
+
+### Watcher config (added v0.3.0a2)
+
+- `watcher.enabled: bool = false` (default off)
+- `watcher.debounce_ms: int = 250`
+- CLI `--watch / --no-watch` overrides config
+
+Watchdog uses kernel-level FS events (`kqueue` on macOS, `inotify` on Linux). Pasywny - ~8 MB stałego RAMu, 0 CPU gdy SKILL.md się nie zmienia. Recommended ON for Mode A (Docker baked config has `enabled: true`), opt-in for Mode B.
+
 ## 11. Public Release Plan
 
 ### Repo

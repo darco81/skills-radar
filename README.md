@@ -11,28 +11,45 @@
 
 ---
 
-## TL;DR
+## Two deployment modes
+
+Pick one based on your workflow:
+
+### Mode A - Docker Desktop running 24/7 (recommended for shared / cross-platform / Linux / Windows)
+
+One container, every Claude Code session in every project connects to the same `http://localhost:6580/mcp`. Container has persistent ChromaDB volume + bind-mounted skill paths read-only + watcher on (baked config). Healthy in ~1 second after `docker compose up`.
 
 ```bash
-pip install skills-radar
-skills-radar init                  # scans ~/.claude/skills + project skills
-skills-radar serve                 # starts MCP server on stdio
+git clone https://github.com/dar-kow/skills-radar
+cd skills-radar
+docker compose up -d --build
+
+claude mcp add --transport http skills-radar http://localhost:6580/mcp
+# Restart Claude Code - /mcp shows skills-radar connected.
 ```
 
-Add to your Claude Code `.mcp.json`:
+Pros: one moving piece, recoverable via `docker compose restart`, runs on Linux/Windows/macOS, isolated. **Limitation on macOS:** no MLX inside the container (Linux container can't reach the Apple GPU). Use Mode B for the full MLX stack.
 
-```json
-{
-  "mcpServers": {
-    "skills-radar": {
-      "command": "skills-radar",
-      "args": ["serve", "--transport", "stdio"]
-    }
-  }
-}
+### Mode B - Native install (recommended for the 100% local Apple Silicon MLX stack)
+
+stdio subprocess per Claude Code session, OR a long-running HTTP server.
+
+```bash
+pip install 'skills-radar[mlx]'                # MLX extras for Apple Silicon
+skills-radar config-init
+skills-radar index
+
+# stdio (auto-starts per CC session):
+claude mcp add skills-radar -- skills-radar serve --transport stdio --watch
+
+# OR HTTP, long-running (Mode A behavior natively, with MLX):
+skills-radar serve --transport http --watch &
+claude mcp add --transport http skills-radar http://localhost:6580/mcp
 ```
 
-Restart Claude Code. Drop your skill descriptions in `skillOverrides`:
+Pros: full MLX rewriter + reranker on Apple Silicon (4096-dim Qwen3 embedder, MoE Qwen3-Coder for rerank), zero Ollama, zero network. **Mac arm64 only.**
+
+### Recovering token budget (both modes)
 
 ```json
 { "skillOverrides": { "*": "name-only" } }

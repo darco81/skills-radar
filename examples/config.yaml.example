@@ -70,3 +70,11 @@ sanitization:
 telemetry:
   enabled: false                                # opt-in; no remote, ever
   db_path: ~/.local/share/skills-radar/stats.db
+
+watcher:
+  # Hot-reload - kernel-level FS observer (kqueue on Mac, inotify on Linux).
+  # Pasywny: ~8 MB stałego RAMu, 0 CPU gdy SKILL.md się nie zmienia.
+  # Recommended ON for "Docker container running 24/7" mode.
+  # CLI --watch / --no-watch overrides this setting.
+  enabled: false
+  debounce_ms: 250

@@ -143,11 +143,23 @@ def _maybe_start_watcher() -> None:
     logger.info("Hot-reload enabled (watching %d roots)", len(app.config.paths))
 
 
-def run_stdio(*, watch: bool = False) -> None:
+def _resolve_watch(cli_flag: bool | None, app: AppContext | None = None) -> bool:
+    """CLI --watch/--no-watch wins; otherwise read config.watcher.enabled."""
+    if cli_flag is not None:
+        return cli_flag
+    if app is None:
+        app = _get_app()
+    return bool(app.config.watcher.enabled)
+
+
+def run_stdio(*, watch: bool | None = None) -> None:
     """Entry point for stdio transport.
 
     Use for: local Claude Code dev, single-client subprocess. Stdout is
     reserved for JSON-RPC; all logs go to stderr.
+
+    `watch=None`: read from config.watcher.enabled.
+    `watch=True/False`: explicit CLI override.
     """
     logging.basicConfig(
         stream=sys.stderr,
@@ -156,7 +168,7 @@ def run_stdio(*, watch: bool = False) -> None:
     )
     logger.info("Starting skills-radar v%s on stdio transport", __version__)
 
-    if watch:
+    if _resolve_watch(watch):
         _maybe_start_watcher()
 
     mcp.run(transport="stdio")
@@ -169,7 +181,7 @@ def run_http(
     path: str | None = None,
     stateless: bool | None = None,
     json_response: bool | None = None,
-    watch: bool = False,
+    watch: bool | None = None,
 ) -> None:
     """Entry point for Streamable HTTP transport.
 
@@ -181,7 +193,8 @@ def run_http(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
-    cfg = _get_app().config.transport
+    app = _get_app()
+    cfg = app.config.transport
     use_host = host or cfg.http_host
     use_port = port or cfg.http_port
     use_path = path or cfg.http_path
@@ -215,7 +228,7 @@ def run_http(
     )
     logger.info("Mode: stateless=%s, json_response=%s", use_stateless, use_json)
 
-    if watch:
+    if _resolve_watch(watch, app):
         _maybe_start_watcher()
 
     mcp.run(transport="streamable-http")

@@ -17,6 +17,37 @@ All notable changes to skills-radar are documented in this file. Format follows 
 - Crypto signing for VERIFIED tier
 - LLM-based prompt-injection scanner (extends regex catalog)
 
+## [v0.3.0a2] - 2026-05-09
+
+### Added
+- **Watcher config option** - `watcher.enabled: bool = false` and `watcher.debounce_ms: int = 250` in config. CLI `--watch / --no-watch` overrides config. Fix for Docker baked config: container starts with `watcher.enabled: true` so hot-reload works without explicit CLI flag (the container CMD doesn't pass `--watch`).
+- **Two deployment modes documented** in README and SPEC §10b:
+  - **Mode A - Docker Desktop running 24/7** (recommended for cross-platform / shared / Linux / Windows). One container, every Claude Code session in every project connects to `http://localhost:6580/mcp`. Persistent ChromaDB volume, watcher on. Mac caveat: no MLX inside Linux container.
+  - **Mode B - Native install** (recommended for 100% local Apple Silicon MLX stack). stdio per-session OR long-running HTTP. Full MLX path (embedder + rewriter + reranker), zero Ollama, zero network.
+
+### Changed
+- `run_stdio` and `run_http` accept `watch: bool | None = None` (was `bool = False`). `None` reads config; `True/False` is explicit override.
+- Dockerfile baked config has `watcher.enabled: true` for the running-24/7 use case.
+
+### Fixed
+- `run_http` referenced `app` before definition (broken in v0.3.0a1 when wiring `_resolve_watch(watch, app)`). Now `app = _get_app()` at the top of `run_http`.
+
+### Verified
+- Container rebuild with `--no-cache` → healthy in 10s, `tools/call search_skills('WCAG audit')` returns a11y-orchestrator (top hit) over HTTP.
+- User-scope MCP registration: `claude mcp add --scope user --transport http skills-radar http://localhost:6580/mcp` → ✓ Connected, available in every project.
+
+## [v0.3.0a1] - 2026-05-09
+
+### Added
+- **MLX-native query rewriter** (`MLXRewriter`) - 100% local on Apple Silicon. Default model `mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit` (MoE, 3B active). Lazy load + LRU cache (256 entries). `_dedupe_trailing` helper trims repeated keywords. Mac-only.
+- **MLX-native reranker** (`MLXReranker`) - replaces v0.3.0a0 placeholder. Single-pass batch scoring: one prompt enumerates all candidates, model returns `N=score` lines parsed via regex. ~5-15s per rerank for top-20 (one inference instead of 20).
+- Live verified end-to-end: PL fuzzy query `napisz mi post na LinkedIn o WCAG` reranks dramatically - top-1 a11y-audit (0.71) vs default top-1 content-writing-lead (0.54) with ffcss-migrate (0.49) close behind.
+- Updated `examples/config.yaml.example` to make MLX the recommended default for Mac, ollama as cross-platform alternative.
+
+### Changed
+- `make_reranker('mlx')` returns `MLXReranker` instance (was: raised NotImplementedError pointing at ollama).
+- `tests/test_reranker.py::test_factory_mlx_returns_real_implementation` (was: `…not_implemented`); platform-aware (skips real load on non-arm64).
+
 ## [v0.3.0a0] - 2026-05-09
 
 ### Added
@@ -92,7 +123,9 @@ All notable changes to skills-radar are documented in this file. Format follows 
 - SPEC.md (~2300 words, 15 sections), README.md, architecture deep-dive, onboarding 8-step guide.
 - Verified working: 60 skills indexed (after dedup); `wcag accessibility audit` → a11y-orchestrator (0.79); `memory leak in my Vue app` → perf-vue-runtime (0.48).
 
-[Unreleased]: https://github.com/dar-kow/skills-radar/compare/v0.3.0a0...HEAD
+[Unreleased]: https://github.com/dar-kow/skills-radar/compare/v0.3.0a2...HEAD
+[v0.3.0a2]: https://github.com/dar-kow/skills-radar/compare/v0.3.0a1...v0.3.0a2
+[v0.3.0a1]: https://github.com/dar-kow/skills-radar/compare/v0.3.0a0...v0.3.0a1
 [v0.3.0a0]: https://github.com/dar-kow/skills-radar/compare/v0.2.0...v0.3.0a0
 [v0.2.0]: https://github.com/dar-kow/skills-radar/compare/v0.2.0a1...v0.2.0
 [v0.2.0a0]: https://github.com/dar-kow/skills-radar/compare/v0.1.0a0...v0.2.0a0

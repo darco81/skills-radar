@@ -48,7 +48,7 @@ RUN chown -R skillradar:skillradar /home/skillradar/.cache
 
 # Default config - paths set to bind-mount targets
 RUN mkdir -p /home/skillradar/.config/skills-radar /home/skillradar/.local/share/skills-radar && \
-    printf 'paths:\n  - /skills\nembedder:\n  backend: sentence-transformers\n  model: all-MiniLM-L6-v2\nstore:\n  backend: chromadb\n  path: /home/skillradar/.local/share/skills-radar/store\ntransport:\n  mode: http\n  http_host: 0.0.0.0\n  http_port: 6580\n  http_path: /mcp\n  stateless_http: true\n  json_response: true\nretrieval:\n  hybrid_weight_semantic: 0.7\n  hybrid_weight_lexical: 0.3\n  default_top_k: 5\ntrust:\n  default_tier: untrusted\n  trusted_paths: []\nsanitization:\n  max_skill_size_kb: 64\n  strip_xml_tags: true\n  strip_live_exec: true\n' \
+    printf 'paths:\n  - /skills\nembedder:\n  backend: sentence-transformers\n  model: all-MiniLM-L6-v2\nstore:\n  backend: chromadb\n  path: /home/skillradar/.local/share/skills-radar/store\ntransport:\n  mode: http\n  http_host: 0.0.0.0\n  http_port: 6580\n  http_path: /mcp\n  stateless_http: true\n  json_response: true\nretrieval:\n  hybrid_weight_semantic: 0.7\n  hybrid_weight_lexical: 0.3\n  default_top_k: 5\ntrust:\n  default_tier: untrusted\n  trusted_paths: []\nsanitization:\n  max_skill_size_kb: 64\n  strip_xml_tags: true\n  strip_live_exec: true\nwatcher:\n  enabled: true\n  debounce_ms: 250\n' \
     > /home/skillradar/.config/skills-radar/config.yaml && \
     mkdir -p /skills && \
     chown -R skillradar:skillradar /home/skillradar /skills
@@ -72,3 +72,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
         sys.exit(0 if r.status==200 else 1)" || exit 1
 
 CMD ["skills-radar", "serve", "--transport", "http", "--host", "0.0.0.0", "--port", "6580"]
+# Note: --watch flag NOT specified so watcher.enabled from baked config is used (true).

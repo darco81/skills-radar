@@ -99,6 +99,16 @@ class TelemetryConfig(BaseModel):
         return _expand(v)
 
 
+class WatcherConfig(BaseModel):
+    """File-watcher (hot-reload) toggle. Pasywny - kqueue/inotify.
+    ~8 MB stałego RAMu, 0 CPU gdy nic się nie zmienia.
+    CLI --watch / --no-watch overrides this setting.
+    """
+
+    enabled: bool = False
+    debounce_ms: int = 250
+
+
 class Config(BaseModel):
     paths: list[Path] = Field(
         default_factory=lambda: [
@@ -113,6 +123,7 @@ class Config(BaseModel):
     trust: TrustConfig = Field(default_factory=TrustConfig)
     sanitization: SanitizationConfig = Field(default_factory=SanitizationConfig)
     telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
+    watcher: WatcherConfig = Field(default_factory=WatcherConfig)
 
     @field_validator("paths", mode="before")
     @classmethod

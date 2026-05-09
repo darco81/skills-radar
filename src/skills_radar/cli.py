@@ -64,8 +64,12 @@ def serve(
         ),
     ] = None,
     watch: Annotated[
-        bool, typer.Option("--watch/--no-watch", help="Hot-reload on SKILL.md changes")
-    ] = False,
+        bool | None,
+        typer.Option(
+            "--watch/--no-watch",
+            help="Hot-reload on SKILL.md changes (overrides config.watcher.enabled)",
+        ),
+    ] = None,
 ) -> None:
     """Start the MCP server (stdio for local Claude Code, http for production)."""
     if transport == "stdio":
