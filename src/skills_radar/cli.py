@@ -204,6 +204,22 @@ def mini_index_cmd(
 
 
 @app.command()
+def tui(
+    refresh: Annotated[
+        float, typer.Option("--refresh", "-r", help="Refresh interval in seconds")
+    ] = 2.0,
+) -> None:
+    """Live read-only dashboard - trust breakdown, recent events, top queries.
+
+    Telemetry must be enabled (config.telemetry.enabled: true) for the
+    recent-events stream to populate. Press Ctrl+C to quit.
+    """
+    from skills_radar.tui import run_tui
+
+    run_tui(refresh_seconds=refresh)
+
+
+@app.command()
 def stats() -> None:
     """Show local usage telemetry summary (top searches, miss rate, top loaded)."""
     from datetime import datetime
