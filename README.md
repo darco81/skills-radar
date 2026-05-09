@@ -152,9 +152,9 @@ Resilient by design: any HTTP error, timeout, or parse failure falls back to the
 |---|---|---|
 | Spec & architecture | ✅ Done | - |
 | F1 - MVP (search + load, in-mem) | ✅ Done | `v0.1.0a0` |
-| F2 - Production (hot-reload, HTTP, threat model, Docker) | 🔄 In progress | `v0.2.0a0` |
-| F3 - Public release (PyPI, GitHub Actions, FtF post) | ⏳ Planned | - |
-| F4 - Polish (telemetry, TUI, more backends) | ⏳ Backlog | post-1.0 |
+| F2 - Production (hot-reload, HTTP, threat model, Docker, integration tests) | ✅ Done | `v0.2.0` |
+| F3 - Public release (PyPI, GitHub Actions, FtF post) | 🔄 In progress | - |
+| F4 - Polish (MLX backend, telemetry, TUI, more backends) | ⏳ Backlog | post-1.0 |
 
 See [`SPEC.md`](./SPEC.md) for full PRD. See [`docs/`](./docs/) for architecture deep dive, threat model, writing-skills guide, context engineering rationale, and onboarding.
 

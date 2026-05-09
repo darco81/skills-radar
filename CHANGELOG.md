@@ -4,14 +4,33 @@ All notable changes to skill-radar are documented in this file. Format follows [
 
 ## [Unreleased]
 
-### Planned for v0.2.0
-- MLX `Qwen3-Embedding-8B` backend for Apple Silicon (opt-in)
-- Heavier integration tests for app, watcher, store
+### Planned for v0.3.0 (first public)
+- PyPI publish via GitHub Actions release workflow
+- From the Field bonus episode (EN + PL) goes live
 - README install GIF / demo screencast
 
-### Planned for v0.3.0 (first public)
-- PyPI publish + GitHub Actions release workflow
-- From the Field bonus episode (EN + PL)
+### Planned for v0.4.0 / post-1.0
+- MLX `Qwen3-Embedding-8B` backend for Apple Silicon (opt-in)
+- Local opt-in usage telemetry, TUI dashboard
+- Voyage / OpenAI embedder backends
+- Auto-discovery from GitHub repos (e.g., `awesome-agent-skills`)
+
+## [v0.2.0] - 2026-05-09
+
+### Added
+- **14 integration tests** covering reindex, hybrid search (a11y / Vue / content queries), tag filtering, load_record fresh-read, hot-reload upsert/delete, disable-model-invocation honored, mini-index generation, find_skill_files exclusions, and dedup priority across trust tiers. Real embedder + ChromaDB. Coverage 26% → **52%** (app.py 80%, store.py 93%, embedder.py 86%).
+
+### Changed / Fixed
+- **Docker healthcheck** now POSTs a real MCP `initialize` handshake instead of GET (which returns 406 by design). Container reports `healthy` in ~1s. Same fix in `docker-compose.yml`.
+- ruff/lint pass: `TrustTier` inherits `StrEnum` (UP042); `OllamaRewriter.__init__` validates `http://`/`https://` scheme (S310 belt-and-braces).
+- `pyproject.toml`: removed deprecated ANN101/ANN102 ruff ignores (no-ops in current ruff).
+
+### Verified
+- Local stdio transport: 60+ skills indexed, hybrid search returns relevant top hits (`wcag accessibility audit` → a11y-orchestrator 0.79).
+- Local HTTP transport: init handshake 200 OK, capabilities returned.
+- **Docker end-to-end**: `docker compose up` → healthy in 1s → `tools/call search_skills` over HTTP returns identical ranked matches as the local CLI.
+
+## [v0.2.0a0] - 2026-05-09
 
 ## [v0.2.0a0] - 2026-05-09
 
@@ -45,6 +64,7 @@ All notable changes to skill-radar are documented in this file. Format follows [
 - SPEC.md (~2300 words, 15 sections), README.md, architecture deep-dive, onboarding 8-step guide.
 - Verified working: 60 skills indexed (after dedup); `wcag accessibility audit` → a11y-orchestrator (0.79); `memory leak in my Vue app` → perf-vue-runtime (0.48).
 
-[Unreleased]: https://github.com/dar-kow/skill-radar/compare/v0.2.0a0...HEAD
+[Unreleased]: https://github.com/dar-kow/skill-radar/compare/v0.2.0...HEAD
+[v0.2.0]: https://github.com/dar-kow/skill-radar/compare/v0.2.0a1...v0.2.0
 [v0.2.0a0]: https://github.com/dar-kow/skill-radar/compare/v0.1.0a0...v0.2.0a0
 [v0.1.0a0]: https://github.com/dar-kow/skill-radar/releases/tag/v0.1.0a0

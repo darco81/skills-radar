@@ -62,10 +62,13 @@ ENV HF_HUB_OFFLINE=1
 
 EXPOSE 6580
 
-# Health: any HTTP response on the MCP path is "alive enough" for orchestrators
+# Health: POST a real MCP initialize handshake - GET returns 406 by design,
+# so we must speak proper Streamable HTTP to confirm the server is healthy.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD python -c "import urllib.request,sys; \
-        r=urllib.request.urlopen('http://127.0.0.1:6580/mcp', timeout=3); \
-        sys.exit(0 if r.status<500 else 1)" || exit 1
+    CMD python -c "import json,urllib.request,sys; \
+        d=json.dumps({'jsonrpc':'2.0','id':1,'method':'initialize','params':{'protocolVersion':'2025-06-18','capabilities':{},'clientInfo':{'name':'hc','version':'0'}}}).encode(); \
+        req=urllib.request.Request('http://127.0.0.1:6580/mcp',data=d,headers={'Content-Type':'application/json','Accept':'application/json,text/event-stream'}); \
+        r=urllib.request.urlopen(req,timeout=3); \
+        sys.exit(0 if r.status==200 else 1)" || exit 1
 
 CMD ["skill-radar", "serve", "--transport", "http", "--host", "0.0.0.0", "--port", "6580"]
