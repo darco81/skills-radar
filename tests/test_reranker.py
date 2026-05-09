@@ -29,9 +29,20 @@ def test_factory_ollama():
     assert isinstance(r, OllamaReranker)
 
 
-def test_factory_mlx_not_implemented():
-    with pytest.raises(NotImplementedError, match="MLX-native"):
-        make_reranker("mlx")
+def test_factory_mlx_returns_real_implementation():
+    """MLX reranker is now implemented (was placeholder until v0.3.0a1)."""
+    import platform
+
+    if platform.machine() != "arm64":
+        with pytest.raises(RuntimeError, match="Apple Silicon"):
+            make_reranker("mlx")
+        return
+    from skills_radar.reranker import MLXReranker
+
+    r = make_reranker("mlx")
+    assert isinstance(r, MLXReranker)
+    # Lazy load: model not loaded yet on construction
+    assert r._loaded is False
 
 
 def test_factory_unknown():

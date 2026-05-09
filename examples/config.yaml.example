@@ -9,27 +9,51 @@ paths:
   # - ~/dev/dar-kow/sdet-wcag-toolkit/.claude/skills
 
 embedder:
+  # 'sentence-transformers' (cross-platform, default)  |  'mlx' (Mac arm64, ultra quality)
   backend: sentence-transformers
   model: all-MiniLM-L6-v2  # ~90MB, 384-dim, CPU-fast
+  # For Mac power-user "100% local Apple Silicon" stack, swap to:
+  #   backend: mlx
+  #   model: mlx-community/Qwen3-Embedding-8B-4bit-DWQ
+  # → 4096-dim vectors, ~4 GB on disk, ~190ms per text on M-series.
 
 store:
+  # 'chromadb' (embedded, zero deps, default)  |  'qdrant' (production, reuse with sdet-brain etc.)
   backend: chromadb
   path: ~/.local/share/skills-radar/store
+  qdrant_url: http://localhost:6333
+  qdrant_collection: skills_v1
 
 transport:
-  mode: stdio       # stdio | http
-  http_port: 6580   # only used when mode=http
+  mode: stdio                # stdio | http
+  http_host: 127.0.0.1
+  http_port: 6580
+  http_path: /mcp
+  stateless_http: true
+  json_response: true
 
 retrieval:
   hybrid_weight_semantic: 0.7  # dense embedding weight
   hybrid_weight_lexical: 0.3   # BM25 weight
   default_top_k: 5
   rewriter:
-    enabled: false             # set true to pre-rewrite queries via local LLM
-    backend: ollama            # 'none' | 'ollama'
-    model: gemma4:e4b          # any small Ollama model with low latency
+    enabled: false             # set true to pre-rewrite fuzzy / multilingual queries
+    # 'none' (passthrough)   |  'mlx' (Mac arm64, 100% local - RECOMMENDED for Mac)
+    # 'ollama' (cross-platform - Linux / Windows / Mac without MLX)
+    backend: mlx
+    # MLX default: Qwen3-Coder-30B-A3B-Instruct-4bit (MoE, 3B active, fast, no thinking)
+    # Ollama default would be: gemma4:e4b
+    model: mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+    # Only used by 'ollama' backend:
     url: http://localhost:11434
     timeout: 5.0
+  reranker:
+    enabled: false             # set true for top-k cross-encoder rerank
+    # 'none' | 'mlx' (Mac, single-pass batch scoring) | 'ollama' (cross-platform, per-pair)
+    backend: mlx
+    model: mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+    url: http://localhost:11434
+    timeout: 8.0
 
 trust:
   default_tier: user
@@ -42,3 +66,7 @@ sanitization:
   # Set true ONLY if serving non-Claude-Code clients (Cursor, custom agents).
   # Claude Code expects to handle !`...` syntax itself.
   strip_live_exec: false
+
+telemetry:
+  enabled: false                                # opt-in; no remote, ever
+  db_path: ~/.local/share/skills-radar/stats.db
