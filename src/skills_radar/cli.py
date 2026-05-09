@@ -359,6 +359,62 @@ def version() -> None:
     console.print(__version__)
 
 
+@app.command(name="import-github")
+def import_github_cmd(
+    repo: Annotated[str, typer.Argument(help="org/repo or full git URL")],
+    branch: Annotated[str, typer.Option("--branch", "-b", help="Branch / tag")] = "main",
+    subpath: Annotated[str, typer.Option("--subpath", help="Subdir to scan inside the repo")] = ".",
+    yes: Annotated[
+        bool, typer.Option("--yes", "-y", help="Bulk import without per-skill prompt")
+    ] = False,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="List candidates only, don't copy")
+    ] = False,
+) -> None:
+    """Import SKILL.md collection from a public GitHub repo (UNTRUSTED tier).
+
+    Skills land in ~/.local/share/skills-radar/imported/<org>--<repo>/...
+    and need an explicit `skills-radar index` afterwards to enter the search index.
+    Trust tier is UNTRUSTED - agents must opt in to load them.
+    """
+    from skills_radar.github_import import import_github_repo
+
+    if dry_run:
+        console.print(f"[bold]Dry run:[/bold] candidates from {repo}@{branch}")
+        result = import_github_repo(repo, branch=branch, subpath=subpath, dry_run=True)
+        for path in result.imported:
+            console.print(f"  • {path}")
+        console.print(f"\n[dim]{len(result.imported)} candidate SKILL.md files.[/dim]")
+        return
+
+    if not yes:
+        console.print(
+            f"[yellow]Non-interactive import requires --yes flag.[/yellow]\n"
+            f"Re-run with: skills-radar import-github {repo} --yes\n"
+            f"Or with --dry-run to preview candidates first."
+        )
+        raise typer.Exit(1)
+
+    console.print(f"[bold]Importing[/bold] {repo}@{branch} → UNTRUSTED tier...")
+    try:
+        result = import_github_repo(repo, branch=branch, subpath=subpath, yes=True)
+    except RuntimeError as exc:
+        err_console.print(f"[red]Import failed:[/red] {exc}")
+        raise typer.Exit(2) from exc
+
+    console.print(f"[green]✓[/green] Imported {len(result.imported)} SKILL.md files")
+    console.print(f"  → {result.import_root}")
+    if result.errors:
+        console.print(f"[red]Errors ({len(result.errors)}):[/red]")
+        for err in result.errors:
+            console.print(f"  ✗ {err}")
+    console.print(
+        "\n[bold]Next:[/bold] Add the import path to your config:\n"
+        f"  paths:\n    - {result.import_root}\n"
+        "Then run [cyan]skills-radar index[/cyan] to add them to the search index."
+    )
+
+
 @app.command(name="config-init")
 def config_init(
     force: Annotated[bool, typer.Option("--force", help="Overwrite existing config")] = False,
