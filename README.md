@@ -80,27 +80,83 @@ Result: from ~6k tokens loaded upfront to ~1k tokens + on-demand. **~83% savings
 ## Features
 
 - 🔍 **Hybrid retrieval** - BM25 (lexical) + dense embeddings (semantic), 70/30 by default
-- 🔥 **Hot reload** - drop a SKILL.md, indexed in <1s (no Claude restart)
-- 🛡️ **Threat model day-one** - trust tiers, prompt-injection scanning, size limits
-- 🪶 **Light by default** - sentence-transformers (90MB) + ChromaDB (zero-deps)
-- 🔌 **Pluggable** - swap embedder (MLX, OpenAI, Voyage), swap store (Qdrant, FAISS)
-- 🌐 **Multi-client** - Claude Code, Cursor, Claude Desktop, custom agents
-- 📡 **Streamable HTTP** transport for production; stdio for local dev
-- ✈️ **Air-gapped** - pre-baked Docker image, offline embedding cache
+- 🔥 **Hot reload** - drop a SKILL.md, indexed in <1s via `watchdog` (no Claude restart)
+- 🛡️ **Threat model day-one** - trust tiers (TRUSTED / VERIFIED / USER / UNTRUSTED), prompt-injection scanning, size limits, XML-injection stripping
+- 🪶 **Light by default** - sentence-transformers (90MB) + ChromaDB (zero deps)
+- 🔌 **Pluggable** - swap embedder (sentence-transformers, MLX [planned], Voyage [planned], OpenAI [planned]); swap store (ChromaDB default, Qdrant [planned])
+- 🌐 **Multi-client** - Claude Code, Cursor, Claude Desktop, custom MCP agents
+- 📡 **Streamable HTTP** transport (`stateless_http=True, json_response=True`) for production; stdio for local dev
+- 🤖 **Optional local-LLM query rewriter** (Ollama) - rewrites ambiguous queries into richer keyword phrases before embedding
+- ✈️ **Air-gapped friendly** - pre-baked Docker image, offline HF Hub flags
+- 🧪 **2-tool MCP surface** - `search_skills` + `load_skill`. Mirrors Anthropic's Tool Search Tool pattern. Eats own dogfood: tool descriptions stay under 200 chars.
+
+---
+
+## Production deployment
+
+For shared / multi-client / Docker deployments, run the **Streamable HTTP** transport instead of stdio.
+
+### Bare-metal
+
+```bash
+skill-radar serve --transport http --host 0.0.0.0 --port 6580 --watch
+```
+
+Defaults match MCP Python SDK guidance: `stateless_http=True`, `json_response=True` - pair both for horizontal scaling behind a load balancer.
+
+### Docker
+
+```bash
+docker compose up -d --build
+```
+
+The bundled Dockerfile pre-bakes the embedding model so containers start in ~2s instead of doing a 30-60s first-run download. Defaults to non-root uid 1000, offline HF Hub flags, strict sanitization (UNTRUSTED tier + `strip_live_exec=true`) - community skills mounted via Docker shouldn't be allowed to run host-level commands.
+
+`docker-compose.yml` mounts your `~/.claude/skills` and plugin cache read-only and persists the ChromaDB store as a named volume.
+
+### Verify
+
+```bash
+curl -X POST http://127.0.0.1:6580/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json,text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"client","version":"0.1.0"}}}'
+```
+
+Should return `200 OK` with the server capabilities + tool list.
+
+---
+
+## Local-LLM query rewriter (optional, opt-in)
+
+If you have [Ollama](https://ollama.com/) running locally, you can have it rewrite ambiguous queries (especially multi-language ones) into richer English keyword phrases before they hit the embedder. Big quality boost for free.
+
+```yaml
+# ~/.config/skill-radar/config.yaml
+retrieval:
+  rewriter:
+    enabled: true
+    backend: ollama
+    model: gemma4:e4b      # or any small local model with low latency
+    url: http://localhost:11434
+    timeout: 5.0
+```
+
+Resilient by design: any HTTP error, timeout, or parse failure falls back to the raw query. Off by default - search works exactly as before unless you opt in.
 
 ---
 
 ## Project status
 
-| Phase | Status | Target |
+| Phase | Status | Tag |
 |---|---|---|
 | Spec & architecture | ✅ Done | - |
-| F1 - MVP (search + load, in-mem) | 🔄 In progress | T+1d |
-| F2 - Production (hot-reload, HTTP, threat model) | ⏳ Planned | T+2d |
-| F3 - Public release (PyPI, docs, FtF post) | ⏳ Planned | T+3d |
+| F1 - MVP (search + load, in-mem) | ✅ Done | `v0.1.0a0` |
+| F2 - Production (hot-reload, HTTP, threat model, Docker) | 🔄 In progress | `v0.2.0a0` |
+| F3 - Public release (PyPI, GitHub Actions, FtF post) | ⏳ Planned | - |
 | F4 - Polish (telemetry, TUI, more backends) | ⏳ Backlog | post-1.0 |
 
-See [`SPEC.md`](./SPEC.md) for full PRD. See [`docs/`](./docs/) for architecture deep dive, threat model, and onboarding.
+See [`SPEC.md`](./SPEC.md) for full PRD. See [`docs/`](./docs/) for architecture deep dive, threat model, writing-skills guide, context engineering rationale, and onboarding.
 
 ---
 
