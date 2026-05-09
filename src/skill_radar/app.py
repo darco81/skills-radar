@@ -135,6 +135,57 @@ class AppContext:
         fused.sort(key=lambda r: r["score"], reverse=True)
         return fused[:top_k]
 
+    def handle_change_upsert(self, path: Path) -> None:
+        """Re-index a single SKILL.md (created/modified). Used by watcher."""
+        rec = parse_skill_file(
+            path,
+            trusted_paths=self.config.trust.trusted_paths,
+            max_size_kb=self.config.sanitization.max_skill_size_kb,
+            strip_live_exec=self.config.sanitization.strip_live_exec,
+        )
+        if rec is None:
+            logger.debug("Watcher upsert: invalid skill ignored: %s", path)
+            return
+        if rec.disable_model_invocation:
+            logger.debug("Watcher upsert: model-invocation-disabled, skip: %s", rec.name)
+            return
+        existing = self.store.get(rec.name)
+        if existing is not None:
+            existing_path = existing.get("metadata", {}).get("path", "")
+            if existing_path and existing_path != str(path):
+                # Same name from different path - keep higher-priority one
+                ex_trust = existing.get("metadata", {}).get("trust", "untrusted")
+                if not _candidate_wins(rec.trust.value, ex_trust):
+                    logger.debug(
+                        "Watcher upsert: lower-priority %s (%s) skipped - kept %s (%s)",
+                        rec.name,
+                        rec.trust.value,
+                        existing_path,
+                        ex_trust,
+                    )
+                    return
+
+        embedding = self.embedder.embed(rec.indexed_text)
+        metadata = _record_to_metadata(rec)
+        self.store.upsert(rec.name, embedding, metadata, rec.indexed_text)
+        self._rebuild_bm25_from_store()
+        logger.info("Watcher upsert: %s (%s)", rec.name, path)
+
+    def handle_change_delete(self, path: Path) -> None:
+        """Remove a skill whose SKILL.md was deleted or moved away."""
+        items = self.store.list_all()
+        target = next(
+            (i for i in items if (i.get("metadata", {}) or {}).get("path") == str(path)),
+            None,
+        )
+        if target is None:
+            logger.debug("Watcher delete: no indexed record for %s", path)
+            return
+        name = target["id"]
+        self.store.delete(name)
+        self._rebuild_bm25_from_store()
+        logger.info("Watcher delete: %s (%s)", name, path)
+
     def load_record(self, name: str) -> tuple[SkillRecord | None, dict[str, Any] | None]:
         """Re-parse SKILL.md fresh from disk. Avoids stale-cache bugs."""
         stored = self.store.get(name)
@@ -216,3 +267,12 @@ def _is_higher_priority(candidate: SkillRecord, existing: SkillRecord) -> bool:
         return Path(candidate.path).stat().st_mtime > Path(existing.path).stat().st_mtime
     except OSError:
         return False
+
+
+def _candidate_wins(candidate_trust: str, existing_trust: str) -> bool:
+    """Pure-string version of _is_higher_priority for the watcher path,
+    where we have trust strings from store metadata, not full records.
+    """
+    cand_tier = _TIER_PRIORITY.get(candidate_trust, 99)
+    exist_tier = _TIER_PRIORITY.get(existing_trust, 99)
+    return cand_tier < exist_tier

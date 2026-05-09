@@ -41,14 +41,19 @@ def serve(
         str, typer.Option("--transport", "-t", help="Transport: stdio | http")
     ] = "stdio",
     port: Annotated[int, typer.Option("--port", "-p", help="HTTP port")] = 6580,
+    watch: Annotated[
+        bool, typer.Option("--watch/--no-watch", help="Hot-reload on SKILL.md changes")
+    ] = False,
 ) -> None:
     """Start the MCP server."""
     if transport == "stdio":
         from skill_radar.mcp_server import run_stdio
 
-        run_stdio()
+        run_stdio(watch=watch)
     elif transport == "http":
-        err_console.print("[yellow]HTTP transport ships in F2 - use stdio for now.[/yellow]")
+        err_console.print(
+            "[yellow]HTTP transport ships in a later F2 commit - use stdio for now.[/yellow]"
+        )
         raise typer.Exit(1)
     else:
         err_console.print(f"[red]Unknown transport: {transport!r}[/red]")
@@ -142,6 +147,36 @@ def search(
             (m["metadata"].get("description", "") or "-")[:80],
         )
     console.print(table)
+
+
+@app.command(name="mini-index")
+def mini_index_cmd(
+    output: Annotated[
+        Optional[Path],
+        typer.Option("--output", "-o", help="Output path (default: ~/.claude/SKILLS-INDEX.md)"),
+    ] = None,
+    group_by: Annotated[
+        str,
+        typer.Option("--group-by", help="Group by 'hub_tags' (default) or 'scope'"),
+    ] = "hub_tags",
+) -> None:
+    """Generate the mini-index markdown file (Tier 1 of Two-Tier Discovery).
+
+    Drop the resulting file's contents into your global CLAUDE.md so Claude
+    Code knows what's available without paying the full skill-listing budget.
+    """
+    from skill_radar.app import AppContext
+    from skill_radar.mini_index import generate_mini_index
+
+    ctx = AppContext()
+    items = ctx.store.list_all()
+    if not items:
+        err_console.print(
+            "[yellow]No skills indexed - run `skill-radar index` first.[/yellow]"
+        )
+        raise typer.Exit(1)
+    out = generate_mini_index(items, output=output, group_by=group_by)
+    console.print(f"[green]✓[/green] Wrote mini-index ({len(items)} skills) to {out}")
 
 
 @app.command()

@@ -134,7 +134,7 @@ def _strip_cli_only_fields(frontmatter: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in frontmatter.items() if k not in _CLI_ONLY_FIELDS}
 
 
-def run_stdio() -> None:
+def run_stdio(*, watch: bool = False) -> None:
     """Entry point for stdio transport."""
     logging.basicConfig(
         stream=sys.stderr,
@@ -142,4 +142,13 @@ def run_stdio() -> None:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
     logger.info("Starting skill-radar v%s on stdio transport", __version__)
+
+    if watch:
+        from skill_radar.watcher import WatcherService
+
+        app = _get_app()
+        watcher = WatcherService(app)
+        watcher.start()
+        logger.info("Hot-reload enabled (watching %d roots)", len(app.config.paths))
+
     mcp.run(transport="stdio")
