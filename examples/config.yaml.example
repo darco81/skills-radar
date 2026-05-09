@@ -1,0 +1,38 @@
+# skill-radar configuration
+# Default location: ~/.config/skill-radar/config.yaml
+
+# Paths to scan for SKILL.md files. Globs are NOT expanded - list explicit roots.
+paths:
+  - ~/.claude/skills
+  - ~/.claude/plugins/cache/claude-plugins-official
+  # add project-level roots if you want them globally indexed:
+  # - ~/dev/dar-kow/sdet-wcag-toolkit/.claude/skills
+
+embedder:
+  backend: sentence-transformers
+  model: all-MiniLM-L6-v2  # ~90MB, 384-dim, CPU-fast
+
+store:
+  backend: chromadb
+  path: ~/.local/share/skill-radar/store
+
+transport:
+  mode: stdio       # stdio | http
+  http_port: 6580   # only used when mode=http
+
+retrieval:
+  hybrid_weight_semantic: 0.7  # dense embedding weight
+  hybrid_weight_lexical: 0.3   # BM25 weight
+  default_top_k: 5
+
+trust:
+  default_tier: user
+  trusted_paths:
+    - ~/.claude/skills
+
+sanitization:
+  max_skill_size_kb: 64
+  strip_xml_tags: true
+  # Set true ONLY if serving non-Claude-Code clients (Cursor, custom agents).
+  # Claude Code expects to handle !`...` syntax itself.
+  strip_live_exec: false
