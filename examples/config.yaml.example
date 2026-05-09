@@ -24,6 +24,12 @@ retrieval:
   hybrid_weight_semantic: 0.7  # dense embedding weight
   hybrid_weight_lexical: 0.3   # BM25 weight
   default_top_k: 5
+  rewriter:
+    enabled: false             # set true to pre-rewrite queries via local LLM
+    backend: ollama            # 'none' | 'ollama'
+    model: gemma4:e4b          # any small Ollama model with low latency
+    url: http://localhost:11434
+    timeout: 5.0
 
 trust:
   default_tier: user

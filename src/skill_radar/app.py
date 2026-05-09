@@ -15,6 +15,7 @@ from rank_bm25 import BM25Okapi
 from skill_radar.config import Config
 from skill_radar.embedder import EmbedderProtocol, make_embedder
 from skill_radar.indexer import SkillRecord, find_skill_files, parse_skill_file
+from skill_radar.rewriter import QueryRewriter, make_rewriter
 from skill_radar.sanitize import TrustTier
 from skill_radar.store import SkillStore
 
@@ -37,6 +38,18 @@ class AppContext:
         self._bm25: BM25Okapi | None = None
         self._bm25_ids: list[str] = []
         self._rebuild_bm25_from_store()
+        self.rewriter: QueryRewriter = self._build_rewriter()
+
+    def _build_rewriter(self) -> QueryRewriter:
+        rcfg = self.config.retrieval.rewriter
+        if not rcfg.enabled:
+            return make_rewriter("none")
+        return make_rewriter(
+            rcfg.backend,
+            url=rcfg.url,
+            model=rcfg.model,
+            timeout=rcfg.timeout,
+        )
 
     def reindex(self, *, rebuild: bool = False) -> int:
         """Scan paths and (re)index all SKILL.md files. Returns count indexed."""
@@ -94,14 +107,15 @@ class AppContext:
         if self.store.count() == 0:
             return []
 
-        query_emb = self.embedder.embed(query)
+        rewritten = self.rewriter.rewrite(query)
+        query_emb = self.embedder.embed(rewritten)
         # Pull more than top_k from semantic for fusion headroom
         oversample = max(top_k * 4, 20)
         sem_hits = self.store.search(query_emb, top_k=oversample)
 
         bm25_scores: dict[str, float] = {}
         if self._bm25 is not None:
-            raw = self._bm25.get_scores(_tokenize(query))
+            raw = self._bm25.get_scores(_tokenize(rewritten))
             bm25_scores = {self._bm25_ids[i]: float(raw[i]) for i in range(len(raw))}
         max_bm25 = max(bm25_scores.values(), default=0.0)
         if max_bm25 < 1e-6:
