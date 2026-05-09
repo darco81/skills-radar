@@ -1,0 +1,48 @@
+# skill-radar - local dev / single-host production compose
+#
+# Mounts the host's skill directories read-only and persists the ChromaDB
+# store + model cache as named volumes.
+#
+# Usage:
+#   docker compose up -d --build
+#   curl -X POST http://127.0.0.1:6580/mcp \
+#     -H 'Content-Type: application/json' -H 'Accept: application/json,text/event-stream' \
+#     -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"client","version":"0.1.0"}}}'
+
+services:
+  skill-radar:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: skill-radar:dev
+    container_name: skill-radar
+    restart: unless-stopped
+    ports:
+      - "6580:6580"
+    volumes:
+      # Mount your skill roots read-only. Adjust as needed.
+      - ${HOME}/.claude/skills:/skills/personal:ro
+      - ${HOME}/.claude/plugins/cache:/skills/plugins:ro
+      # Persist the ChromaDB store across restarts.
+      - skill-radar-store:/home/skillradar/.local/share/skill-radar
+    environment:
+      # Re-enable HF Hub access if you need to swap models post-build.
+      # By default the runtime is offline (model is pre-baked).
+      - HF_HUB_OFFLINE=1
+      - TRANSFORMERS_OFFLINE=1
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - |
+          import urllib.request,sys
+          r=urllib.request.urlopen('http://127.0.0.1:6580/mcp', timeout=3)
+          sys.exit(0 if r.status<500 else 1)
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  skill-radar-store:
