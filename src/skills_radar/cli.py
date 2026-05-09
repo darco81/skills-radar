@@ -204,6 +204,97 @@ def mini_index_cmd(
 
 
 @app.command()
+def stats() -> None:
+    """Show local usage telemetry summary (top searches, miss rate, top loaded)."""
+    from datetime import datetime
+
+    from skills_radar.telemetry import Telemetry
+
+    config = Config.load()
+    tel = Telemetry(enabled=True, db_path=config.telemetry.db_path)
+    summary = tel.stats_summary()
+
+    if not summary["exists"]:
+        if not config.telemetry.enabled:
+            console.print(
+                "[yellow]Telemetry disabled.[/yellow] Enable in "
+                f"{Config.default_path()} (set telemetry.enabled: true)."
+            )
+        else:
+            console.print("[yellow]No events yet.[/yellow] Run a few searches first.")
+        return
+
+    console.print("[bold]skills-radar usage stats[/bold]")
+    console.print(f"DB: {summary['db_path']}")
+    if not config.telemetry.enabled:
+        console.print(
+            "[dim]Note: telemetry.enabled=false in config - no new events being recorded.[/dim]"
+        )
+    console.print()
+
+    totals = summary["totals"]
+    table = Table(title="Event totals")
+    table.add_column("Kind", style="cyan")
+    table.add_column("Count", style="green", justify="right")
+    for kind, count in sorted(totals.items()):
+        table.add_row(kind, str(count))
+    console.print(table)
+    console.print()
+
+    if summary["top_loaded"]:
+        table = Table(title=f"Top loaded skills ({summary['totals'].get('load', 0)} loads)")
+        table.add_column("Skill", style="cyan")
+        table.add_column("Loads", style="green", justify="right")
+        for name, count in summary["top_loaded"]:
+            table.add_row(name, str(count))
+        console.print(table)
+        console.print()
+
+    if summary["top_queries"]:
+        miss_pct = summary["miss_rate"] * 100.0
+        miss_color = "red" if miss_pct > 30 else "yellow" if miss_pct > 15 else "green"
+        table = Table(
+            title=f"Top queries (miss rate: [{miss_color}]{miss_pct:.1f}%[/{miss_color}] "
+            f"of {summary['total_searches']} searches)"
+        )
+        table.add_column("Query", style="cyan", overflow="fold")
+        table.add_column("Count", style="green", justify="right")
+        for query, count in summary["top_queries"]:
+            table.add_row(query[:60], str(count))
+        console.print(table)
+        console.print()
+
+    recent = tel.fetch_recent(limit=10)
+    if recent:
+        table = Table(title="Recent events (last 10)")
+        table.add_column("When", style="dim")
+        table.add_column("Kind", style="yellow")
+        table.add_column("Detail", overflow="fold")
+        for ev in recent:
+            ts = datetime.fromtimestamp(ev["ts"]).strftime("%H:%M:%S")
+            d = ev["payload"]
+            if ev["kind"] == "search":
+                detail = (
+                    f"{d.get('query', '')[:40]} → top1={d.get('top1_score', 0):.2f} "
+                    f"({d.get('latency_ms', 0):.0f}ms)"
+                )
+            elif ev["kind"] == "load":
+                detail = (
+                    f"{d.get('skill_name', '')} ({d.get('trust', '?')}, "
+                    f"{d.get('body_len', 0)}B, {d.get('latency_ms', 0):.0f}ms)"
+                )
+            elif ev["kind"] == "index":
+                detail = (
+                    f"count={d.get('count', 0)} duration={d.get('duration_ms', 0):.0f}ms "
+                    f"rebuild={d.get('rebuild', False)}"
+                )
+            else:
+                detail = str(d)[:80]
+            table.add_row(ts, ev["kind"], detail)
+        console.print(table)
+
+
+@app.command()
 def doctor() -> None:
     """Sanity check: paths, embedder, store, transport."""
     config = Config.load()

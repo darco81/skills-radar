@@ -80,6 +80,16 @@ class SanitizationConfig(BaseModel):
     strip_live_exec: bool = False  # Only strip for non-Claude-Code clients
 
 
+class TelemetryConfig(BaseModel):
+    enabled: bool = False
+    db_path: Path = Field(default_factory=lambda: _expand("~/.local/share/skills-radar/stats.db"))
+
+    @field_validator("db_path", mode="before")
+    @classmethod
+    def _expand_db_path(cls, v: str | Path) -> Path:
+        return _expand(v)
+
+
 class Config(BaseModel):
     paths: list[Path] = Field(
         default_factory=lambda: [
@@ -93,6 +103,7 @@ class Config(BaseModel):
     retrieval: RetrievalConfig = Field(default_factory=RetrievalConfig)
     trust: TrustConfig = Field(default_factory=TrustConfig)
     sanitization: SanitizationConfig = Field(default_factory=SanitizationConfig)
+    telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
 
     @field_validator("paths", mode="before")
     @classmethod

@@ -18,6 +18,7 @@ from skills_radar.indexer import SkillRecord, find_skill_files, parse_skill_file
 from skills_radar.rewriter import QueryRewriter, make_rewriter
 from skills_radar.sanitize import TrustTier
 from skills_radar.store import SkillStore
+from skills_radar.telemetry import Telemetry
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,10 @@ class AppContext:
         self._bm25_ids: list[str] = []
         self._rebuild_bm25_from_store()
         self.rewriter: QueryRewriter = self._build_rewriter()
+        self.telemetry: Telemetry = Telemetry(
+            enabled=self.config.telemetry.enabled,
+            db_path=self.config.telemetry.db_path,
+        )
 
     def _build_rewriter(self) -> QueryRewriter:
         rcfg = self.config.retrieval.rewriter
@@ -52,6 +57,9 @@ class AppContext:
         )
 
     def reindex(self, *, rebuild: bool = False) -> int:
+        import time as _time
+
+        _t0 = _time.perf_counter()
         """Scan paths and (re)index all SKILL.md files. Returns count indexed."""
         if rebuild:
             self.store.reset()
@@ -88,6 +96,11 @@ class AppContext:
         self.store.upsert_batch(ids, embeddings, metadatas, texts)
         self._rebuild_bm25_from_store()
         logger.info("Reindexed %d skills", len(records))
+        self.telemetry.log_index(
+            count=len(records),
+            duration_ms=(_time.perf_counter() - _t0) * 1000.0,
+            rebuild=rebuild,
+        )
         return len(records)
 
     def _rebuild_bm25_from_store(self) -> None:
@@ -104,10 +117,14 @@ class AppContext:
         tags: list[str] | None = None,
     ) -> list[dict[str, Any]]:
         """Hybrid retrieval - fused semantic + BM25 scores. Returns ranked list."""
+        import time as _time
+
+        _t0 = _time.perf_counter()
         if self.store.count() == 0:
             return []
 
         rewritten = self.rewriter.rewrite(query)
+        rewriter_used = rewritten != query
         query_emb = self.embedder.embed(rewritten)
         # Pull more than top_k from semantic for fusion headroom
         oversample = max(top_k * 4, 20)
@@ -147,7 +164,14 @@ class AppContext:
             ]
 
         fused.sort(key=lambda r: r["score"], reverse=True)
-        return fused[:top_k]
+        result = fused[:top_k]
+        self.telemetry.log_search(
+            query=query,
+            matches=result,
+            latency_ms=(_time.perf_counter() - _t0) * 1000.0,
+            rewriter_used=rewriter_used,
+        )
+        return result
 
     def handle_change_upsert(self, path: Path) -> None:
         """Re-index a single SKILL.md (created/modified). Used by watcher."""
@@ -202,18 +226,43 @@ class AppContext:
 
     def load_record(self, name: str) -> tuple[SkillRecord | None, dict[str, Any] | None]:
         """Re-parse SKILL.md fresh from disk. Avoids stale-cache bugs."""
+        import time as _time
+
+        _t0 = _time.perf_counter()
         stored = self.store.get(name)
         if stored is None:
+            self.telemetry.log_load(
+                name,
+                trust="unknown",
+                body_len=0,
+                latency_ms=(_time.perf_counter() - _t0) * 1000.0,
+                found=False,
+            )
             return None, None
         path = Path(stored["metadata"].get("path", ""))
         if not path.exists():
             logger.warning("Indexed skill %r path missing: %s", name, path)
+            self.telemetry.log_load(
+                name,
+                trust=stored["metadata"].get("trust", "unknown"),
+                body_len=0,
+                latency_ms=(_time.perf_counter() - _t0) * 1000.0,
+                found=False,
+            )
             return None, stored["metadata"]
         record = parse_skill_file(
             path,
             trusted_paths=self.config.trust.trusted_paths,
             max_size_kb=self.config.sanitization.max_skill_size_kb,
             strip_live_exec=self.config.sanitization.strip_live_exec,
+        )
+        body_len = len(record.body_sanitized) if record else 0
+        self.telemetry.log_load(
+            name,
+            trust=record.trust.value if record else "unknown",
+            body_len=body_len,
+            latency_ms=(_time.perf_counter() - _t0) * 1000.0,
+            found=record is not None,
         )
         return record, stored["metadata"]
 
