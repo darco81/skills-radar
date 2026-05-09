@@ -34,7 +34,7 @@ class AppContext:
         self.embedder: EmbedderProtocol = make_embedder(
             self.config.embedder.backend, self.config.embedder.model
         )
-        self.store = SkillStore(self.config.store.path)
+        self.store = _make_store(self.config, self.embedder.dimension)
         self._bm25: BM25Okapi | None = None
         self._bm25_ids: list[str] = []
         self._rebuild_bm25_from_store()
@@ -236,6 +236,23 @@ def _split_tags(s: str) -> set[str]:
     if not s:
         return set()
     return {t.strip().lower() for t in s.split(",") if t.strip()}
+
+
+def _make_store(config: Config, embedder_dim: int) -> Any:
+    """Factory: select store backend per config."""
+    backend = (config.store.backend or "chromadb").lower()
+    if backend == "chromadb":
+        return SkillStore(config.store.path)
+    if backend == "qdrant":
+        from skills_radar.qdrant_store import QdrantStore
+
+        return QdrantStore(
+            url=config.store.qdrant_url,
+            collection=config.store.qdrant_collection,
+            dim=embedder_dim,
+        )
+    msg = f"Unsupported store backend: {backend!r}. Use 'chromadb' or 'qdrant'."
+    raise ValueError(msg)
 
 
 _TIER_PRIORITY = {

@@ -21,8 +21,10 @@ class EmbedderConfig(BaseModel):
 
 
 class StoreConfig(BaseModel):
-    backend: str = "chromadb"
+    backend: str = "chromadb"  # 'chromadb' | 'qdrant'
     path: Path = Field(default_factory=lambda: _expand("~/.local/share/skills-radar/store"))
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_collection: str = "skills_v1"
 
     @field_validator("path", mode="before")
     @classmethod

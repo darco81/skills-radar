@@ -47,7 +47,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-mlx = ["mlx>=0.15", "mlx-lm>=0.14"]
+mlx = ["mlx>=0.15", "mlx-lm>=0.14", "mlx-embeddings>=0.0.3"]
 qdrant = ["qdrant-client>=1.10"]
 voyage = ["voyageai>=0.2"]
 openai = ["openai>=1.30"]
