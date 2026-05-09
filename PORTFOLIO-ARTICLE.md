@@ -74,36 +74,59 @@ skills-radar ships four layers of defense, applied at ingest:
 
 These don't make community skills safe to run blindly - they make them **measurable**, with surface-area visible to the agent. Combined with explicit trust tiers, downstream agents can implement policies like "refuse UNTRUSTED skills by default; require explicit user opt-in".
 
-## Tech stack
+## Tech stack - three paths, one repo
 
-The default install runs cross-platform on a single machine. Optional power-user extras add Mac-only acceleration and production-grade infrastructure.
+The default install runs cross-platform on a single machine. Two optional paths add power: a 100% local Apple Silicon stack (zero network, zero cloud, zero Ollama), and a cross-platform LLM-augmented stack via Ollama.
 
-| Layer | Default | Optional |
-|---|---|---|
-| Runtime | Python 3.11+ | - |
-| MCP SDK | `mcp` (FastMCP) | - |
-| Transport | Streamable HTTP `stateless_http=True, json_response=True` | stdio (default for local Claude Code) |
-| Embedder | `sentence-transformers/all-MiniLM-L6-v2` (90 MB, 384-dim, CPU-fast) | MLX `Qwen3-Embedding-8B-4bit-DWQ` (4096-dim, Apple Silicon) |
-| Lexical | BM25 via `rank_bm25` | - |
-| Vector store | ChromaDB (embedded persistent, zero deps) | Qdrant (production-grade, reuse with other RAG projects) |
-| File watcher | `watchdog` 250ms debounce | - |
-| Query rewriter | NoOp (default) | Ollama local LLM (e.g. `gemma4:e4b`) |
-| Cross-encoder reranker | NoOp (default) | Ollama local LLM scoring 0-10 per (query, description) pair |
+| Layer | Default (cross-platform) | Mac 100% local (MLX) | Cross-platform LLM (Ollama) |
+|---|---|---|---|
+| Runtime | Python 3.11+ | - | - |
+| MCP SDK | `mcp` (FastMCP) | - | - |
+| Transport | stdio (Claude Code) / Streamable HTTP (production) | - | - |
+| **Embedder** | `sentence-transformers/all-MiniLM-L6-v2` (90 MB, 384-dim, CPU-fast) | **MLX `Qwen3-Embedding-8B-4bit-DWQ`** (4096-dim, Apple Silicon) | - |
+| Lexical | BM25 via `rank_bm25` | - | - |
+| **Vector store** | ChromaDB (embedded, zero deps) | **Qdrant** (production, reusable across projects - share an instance with sdet-brain) | Qdrant |
+| File watcher | `watchdog` 250 ms debounce | - | - |
+| **Query rewriter** | NoOp | **MLX `Qwen3-Coder-30B-A3B-Instruct-4bit`** - lazy load + LRU cache | Ollama (`gemma4:e4b`), HTTP fallback |
+| **Reranker** | NoOp | **MLX `Qwen3-Coder-30B-A3B`** - single-pass batch scoring | Ollama, per-pair scoring |
+| Telemetry | Off (strict opt-in) | Same | Same |
 
-Why this exact split: defaults are **light** (90 MB model, zero infrastructure) so the open-source community can install with `pip install skills-radar` and run immediately. Power-user extras are **opt-in** so they don't bloat the base install but are wired up cleanly when you want them.
+Why this exact split: defaults are **light** (90 MB model, zero infrastructure) so the open-source community can install with `pip install skills-radar` and run immediately. Two power-user paths are **opt-in** so they don't bloat the base install but are wired up cleanly when you flip the config flags.
+
+The **100% local Apple Silicon stack** is the design highlight. Set:
+
+```yaml
+embedder:
+  backend: mlx
+  model: mlx-community/Qwen3-Embedding-8B-4bit-DWQ
+retrieval:
+  rewriter:
+    enabled: true
+    backend: mlx
+    model: mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+  reranker:
+    enabled: true
+    backend: mlx
+    model: mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+```
+
+…and the entire pipeline - embedding, query rewriting, reranking - runs on your M-series GPU + Neural Engine. No Ollama. No HTTP. No network. Repeated identical queries hit a per-instance LRU cache; warm queries cost ~3 seconds in an MCP server (model in memory) instead of 6+ on cold CLI invocations.
 
 ## Quality of retrieval - the numbers that matter
 
-I tested four representative queries against a 60-skill corpus across three configurations:
+The Polish fuzzy query is the cleanest demonstration of the tradeoff. Same 60-skill corpus, same query, three configurations:
 
-| Query | Default (sentence-transformers, no rewriter) | + Ollama rewriter | + MLX Qwen3-8B embedder |
-|---|---|---|---|
-| "wcag accessibility audit" (EN, technical) | a11y-orchestrator (0.79) ✅ | (similar) | (higher margin) |
-| "memory leak in my Vue 3 app" (EN, fuzzy) | perf-vue-runtime (0.48) ✅ | (similar) | (higher margin) |
-| "napisz mi post na LinkedIn" (PL, casual) | content-writing-lead (0.54), close to ffcss-migrate (0.49) ⚠️ | content-writing-lead (cleaner separation) | content-writing-lead (top1 0.7+, noise <0.3) |
-| "audit my repo for WCAG and grade" (EN, multi-intent) | wcag-audit (0.70), all top 5 are WCAG/a11y ✅ | (similar) | (similar) |
+**Query:** `napisz mi post na LinkedIn o WCAG` (mixed-language, ambiguous intent - could be "write a LinkedIn post about WCAG" or "find me a WCAG-related skill").
 
-The default backend is solid for English technical queries (top-1 score above 0.6 with clean separation from noise). It struggles with Polish casual queries - the score margin between the right answer and a coincidental keyword match is too small. **MLX with Qwen3-Embedding-8B fixes this** at the cost of ~4 GB on disk and Apple Silicon dependency. The Ollama rewriter is a middle-ground that works on any platform and adds 100-300ms latency.
+| Config | Top 5 (name, score) | Verdict |
+|---|---|---|
+| Default sentence-transformers, NoOp rewriter | content-writing-lead (0.54), **ffcss-migrate (0.49 false positive)**, wcag-toolkit-lead (0.42), wcag-dynamic-test (0.32), wcag-report (0.29) | top-1 correct but margin razor-thin; #2 is a coincidental Tailwind→FFCSS migration skill |
+| Default + Ollama rewriter (gemma4:e4b) | content-writing-lead (cleaner top), other a11y skills surface | margin widens, +100-300 ms latency |
+| **MLX rewriter (Qwen3-Coder-30B-A3B-Instruct-4bit)** | a11y-audit (**0.71**), a11y-orchestrator (0.65), a11y-fix (0.61), wcag-static-analyze (0.56), wcag-fix (0.44) | **all 5 hits are a11y/WCAG**, top-1 above 0.7, ~9 s on CLI cold / ~3 s warm in MCP server |
+
+Two things to notice. First - the rewriter doesn't preserve the original surface intent. With MLX rewriter on, `content-writing-lead` doesn't appear at all. The rewriter normalized "post o WCAG" to keywords like *web accessibility wcag accessibility standards accessibility standards* - which is fine for "find me a WCAG-related skill" intent, but a miss if you actually wanted writing help. Tradeoff is real and documented; rewriter is **off by default**.
+
+Second - for English technical queries, the default backend is already solid (top-1 above 0.6 with clean separation). The MLX stack pays off mainly for fuzzy / multilingual / casual phrasing where the small embedder struggles. If your team writes queries in English engineering speak, you might never need the MLX path. If you're me and half your prompts are Polish, the MLX stack is the difference between "good enough most of the time" and "right every time."
 
 ## Local opt-in usage telemetry
 
@@ -156,13 +179,15 @@ The bundled `Dockerfile` is multi-stage: builder stage installs deps and pre-bak
 
 ## What I'd do differently
 
-Three things, in retrospect:
+Four things, in retrospect:
 
 1. **Start with the threat model, not the retrieval.** I wrote sanitization day one but spent 60% of effort on retrieval first. The retrieval problem is interesting; the threat model is what makes the tool actually deployable. If I were starting over I'd write `sanitize.py` and `trust tiers` first, tests for both, then build retrieval on top.
 
 2. **Test BM25 before assuming hybrid is necessary.** My intuition was that pure BM25 would miss too many semantic matches. With short technical descriptions (50-300 chars), BM25 alone gets you 70-80% of the way. The hybrid retrieval pays for itself only in fuzzy / multilingual queries. For a hyper-minimal version, BM25-only would have shipped a week earlier.
 
 3. **The `disable-model-invocation: true` flag is more useful than I initially thought.** Skills marked manual-only get filtered from `search_skills` automatically - turns out a non-trivial fraction of skills are templates / reference docs that shouldn't auto-trigger. Honoring this flag from day one is cheap; retrofitting is annoying.
+
+4. **MLX latency is the wrong thing to optimize prematurely.** First-pass MLX rewriter implementation went straight for "score every candidate one at a time" pattern (mirroring Ollama). For a 20-candidate rerank, that's 20 separate inferences - minutes per query. Single-pass batch (one prompt enumerating all candidates, model returns `N=score` lines, parse with regex) collapses it to one inference, ~5-15 s for the whole pool. Cost: a regex parser. Reward: usable latency. Same lesson applies elsewhere - when working with local LLMs, **batch as much as the context window allows** before you start tuning model size.
 
 ## Scale economics
 
@@ -180,10 +205,14 @@ This isn't just a cost story - it's a **quality** story. Anthropic's research on
 
 ## What's open
 
-Several pieces consciously left for later:
+Several pieces consciously left for the next milestone:
 
-- **Native MLX reranker.** Today the reranker uses Ollama. An MLX-native implementation using a small local LLM (Qwen3-Coder-30B works on M-series) would cut latency and remove the Ollama dependency for Mac users.
+- **FAISS store backend.** Lighter than ChromaDB (one file, zero schema), useful as fallback for restrictive environments where embedding even a SQLite-backed vector DB is too much.
+- **Voyage / OpenAI embedder backends.** Cloud BYOK option for power users who want best-in-class embedding quality without a local 4 GB model.
+- **Auto-discovery from GitHub repos** (e.g., `awesome-agent-skills`). One CLI command pulls a public skill collection into the UNTRUSTED tier with explicit per-skill confirm.
 - **Crypto signing for VERIFIED tier.** Today VERIFIED is path-based (Anthropic-official plugin cache). Cryptographically signed skills with a trust manifest is the natural next step for community skill ecosystems.
+- **LLM-based prompt-injection scanner.** Extends the regex catalog. A small local model (e.g. `gemma4:e4b` via Ollama) classifies suspicious bodies that the regex misses. Opt-in.
+- **Sandbox `bundled_files`.** Today bundled files are enumerated in the `load_skill` response. A future version could optionally read-only sandbox files referenced one level deep so agents can pull them safely.
 - **Multi-language hub-tags taxonomy.** Recommended `hub-tags` vocabulary (`a11y`, `perf`, `qa`, etc.) needs to be published and adopted to make filtered search useful at corpus scale.
 
 ## Repo + install
