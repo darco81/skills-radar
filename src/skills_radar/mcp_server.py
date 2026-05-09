@@ -83,11 +83,19 @@ async def search_skills(
 
 
 @mcp.tool()
-async def load_skill(name: str) -> dict[str, Any]:
+async def load_skill(name: str, sandbox: bool = False) -> dict[str, Any]:
     """Load full SKILL.md content by name. Returns sanitized body + trust tier.
 
     Use when you know the skill name. Body re-read from disk on every call
     so live edits are picked up.
+
+    Args:
+        name: skill name from search_skills or mini-index.
+        sandbox: when True, also read bundled files (one level deep from
+            SKILL.md), validate against safe-extension whitelist + size
+            caps + path traversal + symlinks, and return their sanitized
+            UTF-8 content under `sandboxed_files`. Default False (just
+            list filenames in `bundled_files`).
     """
     app = _get_app()
     record, stored_meta = app.load_record(name)
@@ -101,6 +109,19 @@ async def load_skill(name: str) -> dict[str, Any]:
             "stored_meta_present": stored_meta is not None,
         }
 
+    sandboxed_files: dict[str, str] = {}
+    sandbox_warnings: list[str] = []
+    if sandbox and record.bundled_files:
+        from pathlib import Path
+
+        from skills_radar.sandbox import sandbox_bundled_files
+
+        sandboxed_files, sandbox_warnings = sandbox_bundled_files(
+            Path(record.path),
+            record.bundled_files,
+            strip_live_exec=app.config.sanitization.strip_live_exec,
+        )
+
     return {
         "name": record.name,
         "frontmatter": _strip_cli_only_fields(record.frontmatter),
@@ -111,7 +132,8 @@ async def load_skill(name: str) -> dict[str, Any]:
         "scope": record.scope,
         "hub_tags": record.hub_tags,
         "bundled_files": record.bundled_files,
-        "warnings": record.warnings,
+        "sandboxed_files": sandboxed_files,
+        "warnings": record.warnings + sandbox_warnings,
         "version": __version__,
     }
 
