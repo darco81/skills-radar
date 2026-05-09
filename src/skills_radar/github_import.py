@@ -106,7 +106,7 @@ def import_github_repo(
     with tempfile.TemporaryDirectory(prefix="skills-radar-import-") as tmp:
         clone_dir = Path(tmp) / slug
         try:
-            subprocess.run(  # noqa: S603 - repo_url validated above
+            subprocess.run(  # noqa: S603, S607 - git in PATH; repo_url scheme-validated above
                 [
                     "git",
                     "clone",
