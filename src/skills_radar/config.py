@@ -83,10 +83,21 @@ class TrustConfig(BaseModel):
         return [_expand(p) for p in v]
 
 
+class LLMScannerConfig(BaseModel):
+    """Optional LLM-based prompt-injection scanner (extends regex catalog)."""
+
+    enabled: bool = False
+    backend: str = "ollama"  # 'none' | 'ollama' | 'mlx'
+    model: str = "gemma4:e4b"
+    url: str = "http://localhost:11434"
+    timeout: float = 6.0
+
+
 class SanitizationConfig(BaseModel):
     max_skill_size_kb: int = 64
     strip_xml_tags: bool = True
     strip_live_exec: bool = False  # Only strip for non-Claude-Code clients
+    llm_scanner: LLMScannerConfig = Field(default_factory=LLMScannerConfig)
 
 
 class TelemetryConfig(BaseModel):
