@@ -27,7 +27,7 @@ from __future__ import annotations
 import logging
 import re
 import shutil
-import subprocess
+import subprocess  # noqa: S404 - git invocation needed for repo clone
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -103,12 +103,17 @@ def import_github_repo(
     target_root = import_root.expanduser() / slug
     result = ImportResult(repo_slug=slug)
 
+    git_bin = shutil.which("git")
+    if not git_bin:
+        msg = "`git` command not found in PATH. Install git to use import-github."
+        raise RuntimeError(msg)
+
     with tempfile.TemporaryDirectory(prefix="skills-radar-import-") as tmp:
         clone_dir = Path(tmp) / slug
         try:
-            subprocess.run(  # noqa: S603, S607 - git in PATH; repo_url scheme-validated above
+            subprocess.run(  # noqa: S603 - git_bin is absolute, repo_url scheme-validated above
                 [
-                    "git",
+                    git_bin,
                     "clone",
                     "--depth",
                     "1",
@@ -123,9 +128,6 @@ def import_github_repo(
                 text=True,
                 timeout=120,
             )
-        except FileNotFoundError as exc:
-            msg = "`git` command not found in PATH. Install git to use import-github."
-            raise RuntimeError(msg) from exc
         except subprocess.CalledProcessError as exc:
             msg = f"git clone failed for {repo_url}: {exc.stderr.strip()[:200]}"
             raise RuntimeError(msg) from exc
