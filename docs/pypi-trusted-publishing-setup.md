@@ -39,7 +39,7 @@ Wypełnij **dokładnie tak**:
 | Pole | Wartość |
 |---|---|
 | **PyPI Project Name** | `skills-radar` |
-| **Owner** | `dar-kow` |
+| **Owner** | `darco81` ⚠️ canonical GitHub username (NOT vanity `dar-kow`) |
 | **Repository name** | `skills-radar` |
 | **Workflow name** | `publish.yml` |
 | **Environment name** | `pypi` |
