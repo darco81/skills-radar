@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to skill-radar are documented in this file. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning](https://semver.org/).
+All notable changes to skills-radar are documented in this file. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
@@ -58,13 +58,13 @@ All notable changes to skill-radar are documented in this file. Format follows [
 - Threat model day-one: trust tiers (TRUSTED / VERIFIED / USER / UNTRUSTED), XML injection stripping, prompt-injection regex catalog, name validation (≤64 chars, lowercase + hyphens, reserved words rejected), size cap (default 64KB).
 - Frontmatter parsing: 14 native Claude Code fields + `hub-tags` extension. Backward-compatible (Claude Code ignores unknown frontmatter).
 - Same-name dedup across plugin versions: priority `trusted > user > verified > untrusted`, mtime tiebreak.
-- CLI: `skill-radar serve | index | list | search | doctor | config-init | version`.
+- CLI: `skills-radar serve | index | list | search | doctor | config-init | version`.
 - Sanitized SKILL.md re-read fresh on `load_skill` so live edits surface without restart.
 - 20 smoke tests: name validation, sanitize, trust tier, parse_skill_file (minimal/reserved-name/no-frontmatter/size-limit).
 - SPEC.md (~2300 words, 15 sections), README.md, architecture deep-dive, onboarding 8-step guide.
 - Verified working: 60 skills indexed (after dedup); `wcag accessibility audit` → a11y-orchestrator (0.79); `memory leak in my Vue app` → perf-vue-runtime (0.48).
 
-[Unreleased]: https://github.com/dar-kow/skill-radar/compare/v0.2.0...HEAD
-[v0.2.0]: https://github.com/dar-kow/skill-radar/compare/v0.2.0a1...v0.2.0
-[v0.2.0a0]: https://github.com/dar-kow/skill-radar/compare/v0.1.0a0...v0.2.0a0
-[v0.1.0a0]: https://github.com/dar-kow/skill-radar/releases/tag/v0.1.0a0
+[Unreleased]: https://github.com/dar-kow/skills-radar/compare/v0.2.0...HEAD
+[v0.2.0]: https://github.com/dar-kow/skills-radar/compare/v0.2.0a1...v0.2.0
+[v0.2.0a0]: https://github.com/dar-kow/skills-radar/compare/v0.1.0a0...v0.2.0a0
+[v0.1.0a0]: https://github.com/dar-kow/skills-radar/releases/tag/v0.1.0a0

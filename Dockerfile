@@ -1,4 +1,4 @@
-# skill-radar - production Dockerfile
+# skills-radar - production Dockerfile
 #
 # Multi-stage build. Stage 1 installs deps and pre-bakes the embedding model
 # so the container starts in <2s (vs 30-60s first-run model download).
@@ -30,9 +30,9 @@ RUN python -c "from sentence_transformers import SentenceTransformer; \
 # -----------------------------------------------------------------------------
 FROM python:3.12-slim AS runtime
 
-LABEL org.opencontainers.image.title="skill-radar"
+LABEL org.opencontainers.image.title="skills-radar"
 LABEL org.opencontainers.image.description="Lazy-loading skill discovery for Claude Code via MCP"
-LABEL org.opencontainers.image.source="https://github.com/dar-kow/skill-radar"
+LABEL org.opencontainers.image.source="https://github.com/dar-kow/skills-radar"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # Non-root user for security
@@ -40,16 +40,16 @@ RUN groupadd -r skillradar && useradd -r -g skillradar -u 1000 -m -d /home/skill
 
 # Copy installed Python packages + binary
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin/skill-radar /usr/local/bin/skill-radar
+COPY --from=builder /usr/local/bin/skills-radar /usr/local/bin/skills-radar
 
 # Copy pre-baked model cache
 COPY --from=builder /root/.cache/huggingface /home/skillradar/.cache/huggingface
 RUN chown -R skillradar:skillradar /home/skillradar/.cache
 
 # Default config - paths set to bind-mount targets
-RUN mkdir -p /home/skillradar/.config/skill-radar /home/skillradar/.local/share/skill-radar && \
-    printf 'paths:\n  - /skills\nembedder:\n  backend: sentence-transformers\n  model: all-MiniLM-L6-v2\nstore:\n  backend: chromadb\n  path: /home/skillradar/.local/share/skill-radar/store\ntransport:\n  mode: http\n  http_host: 0.0.0.0\n  http_port: 6580\n  http_path: /mcp\n  stateless_http: true\n  json_response: true\nretrieval:\n  hybrid_weight_semantic: 0.7\n  hybrid_weight_lexical: 0.3\n  default_top_k: 5\ntrust:\n  default_tier: untrusted\n  trusted_paths: []\nsanitization:\n  max_skill_size_kb: 64\n  strip_xml_tags: true\n  strip_live_exec: true\n' \
-    > /home/skillradar/.config/skill-radar/config.yaml && \
+RUN mkdir -p /home/skillradar/.config/skills-radar /home/skillradar/.local/share/skills-radar && \
+    printf 'paths:\n  - /skills\nembedder:\n  backend: sentence-transformers\n  model: all-MiniLM-L6-v2\nstore:\n  backend: chromadb\n  path: /home/skillradar/.local/share/skills-radar/store\ntransport:\n  mode: http\n  http_host: 0.0.0.0\n  http_port: 6580\n  http_path: /mcp\n  stateless_http: true\n  json_response: true\nretrieval:\n  hybrid_weight_semantic: 0.7\n  hybrid_weight_lexical: 0.3\n  default_top_k: 5\ntrust:\n  default_tier: untrusted\n  trusted_paths: []\nsanitization:\n  max_skill_size_kb: 64\n  strip_xml_tags: true\n  strip_live_exec: true\n' \
+    > /home/skillradar/.config/skills-radar/config.yaml && \
     mkdir -p /skills && \
     chown -R skillradar:skillradar /home/skillradar /skills
 
@@ -71,4 +71,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
         r=urllib.request.urlopen(req,timeout=3); \
         sys.exit(0 if r.status==200 else 1)" || exit 1
 
-CMD ["skill-radar", "serve", "--transport", "http", "--host", "0.0.0.0", "--port", "6580"]
+CMD ["skills-radar", "serve", "--transport", "http", "--host", "0.0.0.0", "--port", "6580"]

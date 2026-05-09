@@ -19,7 +19,7 @@ from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
 if TYPE_CHECKING:
-    from skill_radar.app import AppContext
+    from skills_radar.app import AppContext
 
 logger = logging.getLogger(__name__)
 

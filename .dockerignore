@@ -16,7 +16,7 @@ build/
 docs/
 tests/
 examples/
-.skill-radar/
+.skills-radar/
 *.bak-*
 *.log
 .DS_Store

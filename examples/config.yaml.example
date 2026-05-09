@@ -1,5 +1,5 @@
-# skill-radar configuration
-# Default location: ~/.config/skill-radar/config.yaml
+# skills-radar configuration
+# Default location: ~/.config/skills-radar/config.yaml
 
 # Paths to scan for SKILL.md files. Globs are NOT expanded - list explicit roots.
 paths:
@@ -14,7 +14,7 @@ embedder:
 
 store:
   backend: chromadb
-  path: ~/.local/share/skill-radar/store
+  path: ~/.local/share/skills-radar/store
 
 transport:
   mode: stdio       # stdio | http

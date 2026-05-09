@@ -22,7 +22,7 @@ class EmbedderConfig(BaseModel):
 
 class StoreConfig(BaseModel):
     backend: str = "chromadb"
-    path: Path = Field(default_factory=lambda: _expand("~/.local/share/skill-radar/store"))
+    path: Path = Field(default_factory=lambda: _expand("~/.local/share/skills-radar/store"))
 
     @field_validator("path", mode="before")
     @classmethod
@@ -112,4 +112,4 @@ class Config(BaseModel):
 
     @staticmethod
     def default_path() -> Path:
-        return _expand("~/.config/skill-radar/config.yaml")
+        return _expand("~/.config/skills-radar/config.yaml")

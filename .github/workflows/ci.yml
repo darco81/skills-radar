@@ -60,6 +60,6 @@ jobs:
         with:
           context: .
           push: false
-          tags: skill-radar:ci
+          tags: skills-radar:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max

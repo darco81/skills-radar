@@ -1,9 +1,9 @@
-# 📡 skill-radar
+# 📡 skills-radar
 
 > **Lazy-loading skill discovery for Claude Code (and other MCP clients).**
 > Stop bleeding context tokens on skills you might never use.
 
-`skill-radar` is a local **MCP server** that mirrors Anthropic's [MCP Tool Search Tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool) pattern - but for **Skills**. Instead of preloading every skill's metadata into the system prompt at session start (default Claude Code behavior), `skill-radar` exposes two tools (`search_skills`, `load_skill`) so the agent fetches only what's relevant to the current task.
+`skills-radar` is a local **MCP server** that mirrors Anthropic's [MCP Tool Search Tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool) pattern - but for **Skills**. Instead of preloading every skill's metadata into the system prompt at session start (default Claude Code behavior), `skills-radar` exposes two tools (`search_skills`, `load_skill`) so the agent fetches only what's relevant to the current task.
 
 **Why this exists:** Anthropic shipped Tool Search for MCP tools in late 2025 (85% token reduction, +8.6% accuracy on Opus 4.5). They haven't shipped the equivalent for Skills yet. With 80+ skills across personal, project, and plugin scopes, your `/doctor` is probably bleeding 5-10k tokens before you type a word. This fixes that.
 
@@ -14,9 +14,9 @@
 ## TL;DR
 
 ```bash
-pip install skill-radar
-skill-radar init                  # scans ~/.claude/skills + project skills
-skill-radar serve                 # starts MCP server on stdio
+pip install skills-radar
+skills-radar init                  # scans ~/.claude/skills + project skills
+skills-radar serve                 # starts MCP server on stdio
 ```
 
 Add to your Claude Code `.mcp.json`:
@@ -24,8 +24,8 @@ Add to your Claude Code `.mcp.json`:
 ```json
 {
   "mcpServers": {
-    "skill-radar": {
-      "command": "skill-radar",
+    "skills-radar": {
+      "command": "skills-radar",
       "args": ["serve", "--transport", "stdio"]
     }
   }
@@ -38,7 +38,7 @@ Restart Claude Code. Drop your skill descriptions in `skillOverrides`:
 { "skillOverrides": { "*": "name-only" } }
 ```
 
-Now Claude only sees skill **names** in the prompt (~1k tokens for 80 skills), and queries `skill-radar` for full descriptions when needed.
+Now Claude only sees skill **names** in the prompt (~1k tokens for 80 skills), and queries `skills-radar` for full descriptions when needed.
 
 ---
 
@@ -99,7 +99,7 @@ For shared / multi-client / Docker deployments, run the **Streamable HTTP** tran
 ### Bare-metal
 
 ```bash
-skill-radar serve --transport http --host 0.0.0.0 --port 6580 --watch
+skills-radar serve --transport http --host 0.0.0.0 --port 6580 --watch
 ```
 
 Defaults match MCP Python SDK guidance: `stateless_http=True`, `json_response=True` - pair both for horizontal scaling behind a load balancer.
@@ -132,7 +132,7 @@ Should return `200 OK` with the server capabilities + tool list.
 If you have [Ollama](https://ollama.com/) running locally, you can have it rewrite ambiguous queries (especially multi-language ones) into richer English keyword phrases before they hit the embedder. Big quality boost for free.
 
 ```yaml
-# ~/.config/skill-radar/config.yaml
+# ~/.config/skills-radar/config.yaml
 retrieval:
   rewriter:
     enabled: true
@@ -170,7 +170,7 @@ This project stands on shoulders. Worth checking out:
 - [`gotalab/skillport`](https://github.com/gotalab/skillport) - minimal search-then-load reference
 - [`VoltAgent/awesome-agent-skills`](https://github.com/VoltAgent/awesome-agent-skills) - 1000+ skill corpus we benchmark against
 
-What `skill-radar` does differently: 2-tool surface (mirroring Anthropic's pattern), Anthropic-aligned defaults, air-gapped friendly, multi-client by design.
+What `skills-radar` does differently: 2-tool surface (mirroring Anthropic's pattern), Anthropic-aligned defaults, air-gapped friendly, multi-client by design.
 
 ---
 

@@ -15,10 +15,10 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from skill_radar import __version__
-from skill_radar.app import AppContext
+from skills_radar import __version__
+from skills_radar.app import AppContext
 
-logger = logging.getLogger("skill-radar.mcp")
+logger = logging.getLogger("skills-radar.mcp")
 
 # Single global AppContext. Initialized lazily on first tool call to keep
 # startup fast and let `--help` etc. not load the embedding model.
@@ -38,7 +38,7 @@ def _get_app() -> AppContext:
 
 # Tool descriptions deliberately under ~200 chars - they live in agent context.
 mcp = FastMCP(
-    "skill-radar",
+    "skills-radar",
     instructions=(
         "Lazy-loading skill discovery. Two tools: search_skills(query) for fuzzy intent, "
         "load_skill(name) when name is known. Mirror Anthropic Tool Search pattern. "
@@ -136,7 +136,7 @@ def _strip_cli_only_fields(frontmatter: dict[str, Any]) -> dict[str, Any]:
 
 def _maybe_start_watcher() -> None:
     app = _get_app()
-    from skill_radar.watcher import WatcherService
+    from skills_radar.watcher import WatcherService
 
     watcher = WatcherService(app)
     watcher.start()
@@ -154,7 +154,7 @@ def run_stdio(*, watch: bool = False) -> None:
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
-    logger.info("Starting skill-radar v%s on stdio transport", __version__)
+    logger.info("Starting skills-radar v%s on stdio transport", __version__)
 
     if watch:
         _maybe_start_watcher()
@@ -194,7 +194,7 @@ def run_http(
     from mcp.server.fastmcp import FastMCP as _FastMCP
 
     new_mcp = _FastMCP(
-        "skill-radar",
+        "skills-radar",
         instructions=getattr(mcp, "instructions", None),
         host=use_host,
         port=use_port,
@@ -207,7 +207,7 @@ def run_http(
     mcp = new_mcp
 
     logger.info(
-        "Starting skill-radar v%s on streamable-http at http://%s:%d%s",
+        "Starting skills-radar v%s on streamable-http at http://%s:%d%s",
         __version__,
         use_host,
         use_port,

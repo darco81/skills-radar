@@ -1,12 +1,12 @@
-# Contributing to skill-radar
+# Contributing to skills-radar
 
 Thanks for considering a contribution. This project's goal is to be a small, sharp, well-tested tool - not a kitchen sink.
 
 ## Quick start
 
 ```bash
-git clone https://github.com/dar-kow/skill-radar
-cd skill-radar
+git clone https://github.com/dar-kow/skills-radar
+cd skills-radar
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
 pytest -q

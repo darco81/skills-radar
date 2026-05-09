@@ -34,7 +34,7 @@ Most community projects ship a single MCP tool, "find_relevant_skill," and assum
 
 ## Two-Tier Discovery
 
-`skill-radar` splits discovery in two:
+`skills-radar` splits discovery in two:
 
 **Tier 1 - Mini-index in CLAUDE.md, ~1k tokens.** A flat `name + 1-line summary` per skill, grouped by category. Always visible. Cheap. Tells Claude *what exists.*
 
@@ -53,14 +53,14 @@ Stack matches Anthropic's published guidance:
 
 ## What you get
 
-- `pip install skill-radar` (when published)
-- `skill-radar serve --transport stdio` for local Claude Code; `--transport http` for Docker / production
+- `pip install skills-radar` (when published)
+- `skills-radar serve --transport stdio` for local Claude Code; `--transport http` for Docker / production
 - Hot reload - drop a SKILL.md, indexed in <1s
 - Optional local-LLM query rewriter (Ollama) - rewrites ambiguous queries into richer keyword phrases, off by default
 - Air-gapped friendly - pre-baked Docker image, offline HF Hub flags
 - Multi-client - Claude Code, Cursor, Claude Desktop, custom MCP agents
 
-Repo: **github.com/dar-kow/skill-radar** (link in first comment for the algorithm gods)
+Repo: **github.com/dar-kow/skills-radar** (link in first comment for the algorithm gods)
 
 ## Call to action
 

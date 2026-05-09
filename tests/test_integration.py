@@ -13,8 +13,8 @@ from typing import Any
 
 import pytest
 
-from skill_radar.app import AppContext
-from skill_radar.config import (
+from skills_radar.app import AppContext
+from skills_radar.config import (
     Config,
     EmbedderConfig,
     RetrievalConfig,
@@ -23,9 +23,8 @@ from skill_radar.config import (
     TransportConfig,
     TrustConfig,
 )
-from skill_radar.indexer import find_skill_files
-from skill_radar.mini_index import generate_mini_index
-
+from skills_radar.indexer import find_skill_files
+from skills_radar.mini_index import generate_mini_index
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -78,7 +77,7 @@ def _make_config(skills_root: Path, store_root: Path) -> Config:
 
 @pytest.fixture(scope="module")
 def integration_workspace(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, Path]:
-    base = tmp_path_factory.mktemp("skill-radar-it")
+    base = tmp_path_factory.mktemp("skills-radar-it")
     return base / "skills", base / "store"
 
 
@@ -256,9 +255,7 @@ def test_load_record_fresh_read_after_edit(
     assert "Original body content" not in rec2.body_sanitized
 
 
-def test_mini_index_generation_full_pipeline(
-    app_context: AppContext, tmp_path: Path
-):
+def test_mini_index_generation_full_pipeline(app_context: AppContext, tmp_path: Path):
     items = app_context.store.list_all()
     out = tmp_path / "INDEX.md"
     generate_mini_index(items, output=out)

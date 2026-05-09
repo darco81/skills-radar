@@ -1,4 +1,4 @@
-"""CLI - `skill-radar serve | index | list | doctor | version`."""
+"""CLI - `skills-radar serve | index | list | doctor | version`."""
 
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from skill_radar import __version__
-from skill_radar.config import Config
+from skills_radar import __version__
+from skills_radar.config import Config
 
 app = typer.Typer(
-    name="skill-radar",
+    name="skills-radar",
     help="Lazy-loading skill discovery for Claude Code via MCP.",
     no_args_is_help=True,
     add_completion=False,
@@ -69,11 +69,11 @@ def serve(
 ) -> None:
     """Start the MCP server (stdio for local Claude Code, http for production)."""
     if transport == "stdio":
-        from skill_radar.mcp_server import run_stdio
+        from skills_radar.mcp_server import run_stdio
 
         run_stdio(watch=watch)
     elif transport == "http":
-        from skill_radar.mcp_server import run_http
+        from skills_radar.mcp_server import run_http
 
         run_http(
             host=host,
@@ -93,7 +93,7 @@ def index(
     rebuild: Annotated[bool, typer.Option("--rebuild", help="Drop existing index first")] = False,
 ) -> None:
     """Scan configured paths and (re)index all SKILL.md files."""
-    from skill_radar.app import AppContext
+    from skills_radar.app import AppContext
 
     ctx = AppContext()
     n = ctx.reindex(rebuild=rebuild)
@@ -109,7 +109,7 @@ def list_skills(
     ] = None,
 ) -> None:
     """List indexed skills with metadata."""
-    from skill_radar.app import AppContext
+    from skills_radar.app import AppContext
 
     ctx = AppContext()
     items = ctx.store.list_all()
@@ -152,7 +152,7 @@ def search(
     ] = None,
 ) -> None:
     """Run a hybrid search against the index (mirrors `search_skills` MCP tool)."""
-    from skill_radar.app import AppContext
+    from skills_radar.app import AppContext
 
     ctx = AppContext()
     matches = ctx.hybrid_search(query=query, top_k=top_k, tags=tag)
@@ -191,13 +191,13 @@ def mini_index_cmd(
     Drop the resulting file's contents into your global CLAUDE.md so Claude
     Code knows what's available without paying the full skill-listing budget.
     """
-    from skill_radar.app import AppContext
-    from skill_radar.mini_index import generate_mini_index
+    from skills_radar.app import AppContext
+    from skills_radar.mini_index import generate_mini_index
 
     ctx = AppContext()
     items = ctx.store.list_all()
     if not items:
-        err_console.print("[yellow]No skills indexed - run `skill-radar index` first.[/yellow]")
+        err_console.print("[yellow]No skills indexed - run `skills-radar index` first.[/yellow]")
         raise typer.Exit(1)
     out = generate_mini_index(items, output=output, group_by=group_by)
     console.print(f"[green]✓[/green] Wrote mini-index ({len(items)} skills) to {out}")
@@ -207,7 +207,7 @@ def mini_index_cmd(
 def doctor() -> None:
     """Sanity check: paths, embedder, store, transport."""
     config = Config.load()
-    console.print(f"[bold]skill-radar v{__version__}[/bold]")
+    console.print(f"[bold]skills-radar v{__version__}[/bold]")
     console.print(f"Config:  {Config.default_path()}")
     console.print()
 
@@ -228,7 +228,7 @@ def doctor() -> None:
     console.print(f"  backend: {config.store.backend}")
     console.print(f"  path:    {config.store.path}")
     try:
-        from skill_radar.store import SkillStore
+        from skills_radar.store import SkillStore
 
         store = SkillStore(config.store.path)
         console.print(f"  indexed: {store.count()} skills")

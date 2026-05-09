@@ -1,4 +1,4 @@
-# Context engineering - why skill-radar exists
+# Context engineering - why skills-radar exists
 
 > "Find the smallest possible set of high-signal tokens that maximize the likelihood of the desired outcome." - Anthropic, [Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)
 
@@ -18,13 +18,13 @@ In late 2025, Anthropic shipped two relevant features:
 
 These solve **MCP tools**. They don't solve **skills**, which are a separate Claude Code mechanism - files in `~/.claude/skills/` that load via the Skill tool, not via MCP.
 
-skill-radar mirrors the exact same pattern (search-then-load, deferred metadata) for skills.
+skills-radar mirrors the exact same pattern (search-then-load, deferred metadata) for skills.
 
 ## Two-Tier Discovery - the design
 
 The naive RAG-over-skills idea has a fatal flaw: if Claude doesn't see the skills exist, it never queries the index. Most community "MCP skill server" projects fall into this trap and stay unused.
 
-skill-radar splits discovery into two complementary signals:
+skills-radar splits discovery into two complementary signals:
 
 ### Tier 1 - Mini-index (always preloaded, ~1k tokens)
 
@@ -48,10 +48,10 @@ For a user with 80 skills:
 | Strategy | Per-session cost | Worst case (use 1 skill) |
 |---|---|---|
 | Native skill listing | ~6,000 tokens | ~6,000 tokens |
-| skill-radar Two-Tier | ~1,000 tokens (mini-index) | ~1,000 + ~2,000 = ~3,000 tokens |
-| skill-radar - multiple loads (5 skills) | ~1,000 + 5 × 2,000 = ~11,000 tokens | (rare - most sessions load 0-2) |
+| skills-radar Two-Tier | ~1,000 tokens (mini-index) | ~1,000 + ~2,000 = ~3,000 tokens |
+| skills-radar - multiple loads (5 skills) | ~1,000 + 5 × 2,000 = ~11,000 tokens | (rare - most sessions load 0-2) |
 
-Net: in the realistic case (1-2 skills loaded per session), skill-radar saves ~3-5k tokens per session. At scale (500 skills), the native approach becomes unworkable; skill-radar's cost stays roughly flat.
+Net: in the realistic case (1-2 skills loaded per session), skills-radar saves ~3-5k tokens per session. At scale (500 skills), the native approach becomes unworkable; skills-radar's cost stays roughly flat.
 
 ## Why this matters beyond token count
 
@@ -71,7 +71,7 @@ Without a Tier 1 surface signal, Tier 2 is invisible. This is why every "MCP ski
 1. Loads everything anyway (defeating the purpose), or
 2. Loads nothing and stays unused
 
-skill-radar's contribution: **the mini-index makes Tier 2 visible without paying full description budget.**
+skills-radar's contribution: **the mini-index makes Tier 2 visible without paying full description budget.**
 
 ## Threat model is part of context engineering
 

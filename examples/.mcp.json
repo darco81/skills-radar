@@ -1,7 +1,7 @@
 {
   "mcpServers": {
-    "skill-radar": {
-      "command": "skill-radar",
+    "skills-radar": {
+      "command": "skills-radar",
       "args": ["serve", "--transport", "stdio"]
     }
   }

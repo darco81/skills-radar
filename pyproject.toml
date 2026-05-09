@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "skill-radar"
+name = "skills-radar"
 version = "0.1.0a0"
 description = "Lazy-loading skill discovery for Claude Code via MCP - mirrors Anthropic's Tool Search Tool pattern for Skills."
 readme = "README.md"
@@ -61,17 +61,17 @@ dev = [
 ]
 
 [project.scripts]
-skill-radar = "skill_radar.cli:app"
+skills-radar = "skills_radar.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/dar-kow/skill-radar"
-Documentation = "https://github.com/dar-kow/skill-radar/tree/main/docs"
-Repository = "https://github.com/dar-kow/skill-radar"
-Issues = "https://github.com/dar-kow/skill-radar/issues"
-Changelog = "https://github.com/dar-kow/skill-radar/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/dar-kow/skills-radar"
+Documentation = "https://github.com/dar-kow/skills-radar/tree/main/docs"
+Repository = "https://github.com/dar-kow/skills-radar"
+Issues = "https://github.com/dar-kow/skills-radar/issues"
+Changelog = "https://github.com/dar-kow/skills-radar/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/skill_radar"]
+packages = ["src/skills_radar"]
 
 [tool.ruff]
 line-length = 100
@@ -91,4 +91,4 @@ warn_unused_configs = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-addopts = "-v --cov=skill_radar --cov-report=term-missing"
+addopts = "-v --cov=skills_radar --cov-report=term-missing"

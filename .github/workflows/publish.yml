@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/skill-radar
+      url: https://pypi.org/p/skills-radar
     permissions:
       id-token: write
       contents: write

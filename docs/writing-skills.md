@@ -6,7 +6,7 @@ This guide is for anyone authoring skills - your own personal collection, a proj
 
 ## The two retrieval signals
 
-skill-radar indexes a single combined string per skill: `description + "\n\n" + when_to_use`. **It does not index the body.** Everything below the frontmatter is invisible to retrieval until the skill is loaded.
+skills-radar indexes a single combined string per skill: `description + "\n\n" + when_to_use`. **It does not index the body.** Everything below the frontmatter is invisible to retrieval until the skill is loaded.
 
 What this means: every keyword you want to be findable on must appear in `description` or `when_to_use`. Save the deep details (routing matrices, code examples, multi-step workflows) for the body - they'll load when the skill activates, but they don't help discovery.
 
@@ -66,7 +66,7 @@ when_to_use: |
   (use perf-ssr-hydration), or non-Vue frameworks.
 ```
 
-### `hub-tags` (skill-radar extension)
+### `hub-tags` (skills-radar extension)
 
 A list of category tags for filtered search and mini-index grouping. Backward-compatible - Claude Code ignores unknown frontmatter.
 
@@ -101,7 +101,7 @@ If you wrote a skill called `perf-vue-runtime`, the hybrid retriever should surf
 Test it:
 
 ```bash
-skill-radar search "my Vue app is slow"
+skills-radar search "my Vue app is slow"
 ```
 
 If your skill is in the top 3 with a score ≥0.4, you're good. If not, iterate on `description` and `when_to_use`.
@@ -130,8 +130,8 @@ when_to_use: |
 ## Iteration workflow
 
 1. Write the skill.
-2. Re-index: `skill-radar index` (or rely on hot-reload if `serve --watch`).
-3. Run 5-10 queries you expect to hit it: `skill-radar search "..."`.
+2. Re-index: `skills-radar index` (or rely on hot-reload if `serve --watch`).
+3. Run 5-10 queries you expect to hit it: `skills-radar search "..."`.
 4. If miss: rewrite `description` and `when_to_use`.
 5. Repeat until 80%+ of expected queries land your skill in top 3.
 

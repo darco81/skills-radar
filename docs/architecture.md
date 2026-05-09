@@ -1,6 +1,6 @@
 # Architecture - Two-Tier Discovery
 
-> Deep dive into how skill-radar works under the hood. For the user-facing TL;DR see [README](../README.md). For the full PRD see [SPEC.md](../SPEC.md).
+> Deep dive into how skills-radar works under the hood. For the user-facing TL;DR see [README](../README.md). For the full PRD see [SPEC.md](../SPEC.md).
 
 ## The discovery dilemma
 
@@ -19,7 +19,7 @@ We split the discovery into two complementary signals:
 A flat list of `name + 1-line summary` for every indexed skill, written to `~/.claude/SKILLS-INDEX.md` and imported in the user's global `CLAUDE.md`. Example:
 
 ```markdown
-# Skills available (search via skill-radar MCP)
+# Skills available (search via skills-radar MCP)
 
 ## Accessibility
 - a11y-orchestrator - full WCAG audit, dispatches 7 agents
@@ -34,7 +34,7 @@ A flat list of `name + 1-line summary` for every indexed skill, written to `~/.c
 ```
 
 Why this matters:
-- Agent sees skills exist → triggers querying skill-radar
+- Agent sees skills exist → triggers querying skills-radar
 - ~80 skills × ~12 chars/name + ~50 chars/summary ≈ ~5k chars ≈ 1k tokens
 - Categories help agent pre-filter mentally before querying
 
@@ -161,7 +161,7 @@ We default to stdio for first-run simplicity (just works with Claude Code's `.mc
 ## Out-of-scope (consciously)
 
 - **Skill execution** - we don't run skills. We only discover and serve them. Execution is the agent's job.
-- **Skill authoring** - there's no `skill-radar create` command. Use [skill-creator](https://github.com/anthropics/claude-code/tree/main/skills/skill-creator) or write SKILL.md by hand.
+- **Skill authoring** - there's no `skills-radar create` command. Use [skill-creator](https://github.com/anthropics/claude-code/tree/main/skills/skill-creator) or write SKILL.md by hand.
 - **Multi-tenant auth** - local-first tool. If you need RBAC, run separate instances per user.
 - **Versioning of skills** - handled by Claude Code's native plugin/marketplace system. We index whatever's on disk.
 

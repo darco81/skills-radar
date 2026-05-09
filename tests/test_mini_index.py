@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from skill_radar.mini_index import _csv_to_list, _first_sentence, generate_mini_index
+from skills_radar.mini_index import _csv_to_list, _first_sentence, generate_mini_index
 
 
 def test_first_sentence_clips_at_period():

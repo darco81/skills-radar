@@ -17,7 +17,7 @@ Naive RAG over skills loads any of these as authoritative instructions. We refus
 
 ## Defense in depth
 
-skill-radar ships four layers of defense, applied at ingest:
+skills-radar ships four layers of defense, applied at ingest:
 
 ### Layer 1 - Trust tier assignment
 
@@ -71,7 +71,7 @@ Why detect rather than rewrite: rewriting risks breaking legitimate references (
 
 Claude Code interprets `` !`command` `` syntax in SKILL.md by executing the command and inlining the output **before Claude sees the content**. For non-Claude-Code clients (Cursor, Claude Desktop, custom agents), the syntax is dead - they'd see literal backticks.
 
-skill-radar's default behavior: pass through (preserves Claude Code semantics). With `sanitization.strip_live_exec: true`, the syntax is replaced with `[LIVE-EXEC-STRIPPED]` and the body is reflagged.
+skills-radar's default behavior: pass through (preserves Claude Code semantics). With `sanitization.strip_live_exec: true`, the syntax is replaced with `[LIVE-EXEC-STRIPPED]` and the body is reflagged.
 
 ### Layer 4 - Size cap
 
@@ -79,13 +79,13 @@ UTF-8 byte length per SKILL.md is capped at 64KB by default (`sanitization.max_s
 
 ## What we do NOT do
 
-- **No execution** - skill-radar never runs commands, never imports skill code, never resolves file references inside SKILL.md. We only index and serve.
+- **No execution** - skills-radar never runs commands, never imports skill code, never resolves file references inside SKILL.md. We only index and serve.
 - **No automatic policy** - we surface trust tier and warnings; the agent decides whether to honor them.
 - **No cryptographic signing yet** - VERIFIED tier is path-based, not signature-based. Crypto signing is on the F4 backlog (see SPEC §8).
 
 ## Recommendations for downstream agents
 
-If you're building an agent on top of skill-radar:
+If you're building an agent on top of skills-radar:
 
 1. **Refuse UNTRUSTED skills by default.** Make the user explicitly opt-in per skill.
 2. **Show warnings to the human.** If `warnings` array is non-empty in `load_skill` response, surface it before acting.
@@ -103,4 +103,4 @@ If you're building an agent on top of skill-radar:
 
 ## Reporting a security issue
 
-If you find a vulnerability in skill-radar (e.g., a sanitization bypass), please email `d.kowalski@sdet.it` rather than opening a public issue. We aim to acknowledge within 48h.
+If you find a vulnerability in skills-radar (e.g., a sanitization bypass), please email `d.kowalski@sdet.it` rather than opening a public issue. We aim to acknowledge within 48h.

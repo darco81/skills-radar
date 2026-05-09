@@ -13,7 +13,7 @@ from pathlib import Path
 
 import yaml
 
-from skill_radar.sanitize import (
+from skills_radar.sanitize import (
     TrustTier,
     determine_trust_tier,
     is_size_ok,

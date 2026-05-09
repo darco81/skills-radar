@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from skill_radar.indexer import parse_skill_file
-from skill_radar.sanitize import (
+from skills_radar.indexer import parse_skill_file
+from skills_radar.sanitize import (
     TrustTier,
     determine_trust_tier,
     is_size_ok,

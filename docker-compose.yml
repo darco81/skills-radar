@@ -1,4 +1,4 @@
-# skill-radar - local dev / single-host production compose
+# skills-radar - local dev / single-host production compose
 #
 # Mounts the host's skill directories read-only and persists the ChromaDB
 # store + model cache as named volumes.
@@ -10,12 +10,12 @@
 #     -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"client","version":"0.1.0"}}}'
 
 services:
-  skill-radar:
+  skills-radar:
     build:
       context: .
       dockerfile: Dockerfile
-    image: skill-radar:dev
-    container_name: skill-radar
+    image: skills-radar:dev
+    container_name: skills-radar
     restart: unless-stopped
     ports:
       - "6580:6580"
@@ -24,7 +24,7 @@ services:
       - ${HOME}/.claude/skills:/skills/personal:ro
       - ${HOME}/.claude/plugins/cache:/skills/plugins:ro
       # Persist the ChromaDB store across restarts.
-      - skill-radar-store:/home/skillradar/.local/share/skill-radar
+      - skills-radar-store:/home/skillradar/.local/share/skills-radar
     environment:
       # Re-enable HF Hub access if you need to swap models post-build.
       # By default the runtime is offline (model is pre-baked).
@@ -49,4 +49,4 @@ services:
       start_period: 15s
 
 volumes:
-  skill-radar-store:
+  skills-radar-store:

@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from skill_radar.rewriter import (
+from skills_radar.rewriter import (
     NoOpRewriter,
     OllamaRewriter,
     _clean,

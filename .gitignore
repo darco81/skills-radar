@@ -53,7 +53,7 @@ htmlcov/
 .DS_Store
 
 # Project-local
-.skill-radar/
+.skills-radar/
 *.log
 local_*.yaml
 *.bak-*

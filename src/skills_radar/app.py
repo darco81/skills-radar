@@ -12,12 +12,12 @@ from typing import Any
 
 from rank_bm25 import BM25Okapi
 
-from skill_radar.config import Config
-from skill_radar.embedder import EmbedderProtocol, make_embedder
-from skill_radar.indexer import SkillRecord, find_skill_files, parse_skill_file
-from skill_radar.rewriter import QueryRewriter, make_rewriter
-from skill_radar.sanitize import TrustTier
-from skill_radar.store import SkillStore
+from skills_radar.config import Config
+from skills_radar.embedder import EmbedderProtocol, make_embedder
+from skills_radar.indexer import SkillRecord, find_skill_files, parse_skill_file
+from skills_radar.rewriter import QueryRewriter, make_rewriter
+from skills_radar.sanitize import TrustTier
+from skills_radar.store import SkillStore
 
 logger = logging.getLogger(__name__)
 

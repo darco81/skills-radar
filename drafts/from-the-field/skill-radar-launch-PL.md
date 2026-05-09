@@ -34,7 +34,7 @@ Większość projektów społecznościowych shippuje jedno MCP tool "find_releva
 
 ## Two-Tier Discovery
 
-`skill-radar` rozdziela discovery na dwie warstwy:
+`skills-radar` rozdziela discovery na dwie warstwy:
 
 **Tier 1 - Mini-index w CLAUDE.md, ~1k tokenów.** Płaska lista `nazwa + 1-zdaniowy opis` per skill, pogrupowane kategoriami. Zawsze widoczne. Tanie. Mówi Claude'owi *co istnieje.*
 
@@ -53,14 +53,14 @@ Stack zgodny z opublikowanymi best practices Anthropic:
 
 ## Co dostajesz
 
-- `pip install skill-radar` (po publikacji na PyPI)
-- `skill-radar serve --transport stdio` dla lokalnego Claude Code; `--transport http` dla Dockera / produkcji
+- `pip install skills-radar` (po publikacji na PyPI)
+- `skills-radar serve --transport stdio` dla lokalnego Claude Code; `--transport http` dla Dockera / produkcji
 - Hot reload - wrzucasz SKILL.md, indeksowane <1s
 - Opcjonalny local-LLM query rewriter (Ollama) - przepisuje niejednoznaczne queries na bogatsze frazy keyword'owe; domyślnie wyłączony
 - Air-gapped friendly - pre-baked Docker image, offline flagi HF Hub
 - Multi-client - Claude Code, Cursor, Claude Desktop, custom agenty MCP
 
-Repo: **github.com/dar-kow/skill-radar** (link w pierwszym komentarzu pod EN postem - algorytm tak chce)
+Repo: **github.com/dar-kow/skills-radar** (link w pierwszym komentarzu pod EN postem - algorytm tak chce)
 
 ## Call to action
 
@@ -73,6 +73,6 @@ Jak rozwiązałeś to inaczej - pokazuj. Na dobre pomysły nie ma monopolu, a pr
 ## Notatki przed publikacją
 
 - Wrzucić jako pierwszy komentarz pod EN postem (link nie idzie w treści głównej - ranking algorytmu LI)
-- W tym komentarzu link do repo + krótka linijka po PL: "Pełny opis po angielsku w poście wyżej. Repo: github.com/dar-kow/skill-radar"
+- W tym komentarzu link do repo + krótka linijka po PL: "Pełny opis po angielsku w poście wyżej. Repo: github.com/dar-kow/skills-radar"
 - Drugi komentarz wewnątrz wątku PL (po 30 min): "Pełna architektura w SPEC.md w repo, ~2300 słów, bez waty"
 - Voice: peer-level senior engineers PL TI scene, nie juniorów, nie C-level. Brak korpomowy.

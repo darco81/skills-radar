@@ -1,4 +1,4 @@
-# skill-radar - Product Requirements & Design Spec
+# skills-radar - Product Requirements & Design Spec
 
 **Status:** Draft v0.1 - 2026-05-09
 **Authors:** Dariusz Kowalski (SDET) + Claude (Opus 4.7)
@@ -16,7 +16,7 @@ Claude Code's native skill discovery loads **every installed skill's name + desc
 
 ## 2. Solution - one sentence
 
-**`skill-radar`** is a local MCP server that exposes a 2-tool surface (`search_skills`, `load_skill`) so AI agents can discover Claude Code-style Skills via vector + BM25 hybrid retrieval instead of preloading metadata. Mirrors Anthropic's Tool Search Tool pattern. Threat-model-first. Air-gapped friendly.
+**`skills-radar`** is a local MCP server that exposes a 2-tool surface (`search_skills`, `load_skill`) so AI agents can discover Claude Code-style Skills via vector + BM25 hybrid retrieval instead of preloading metadata. Mirrors Anthropic's Tool Search Tool pattern. Threat-model-first. Air-gapped friendly.
 
 ## 3. Two-Tier Discovery Architecture
 
@@ -26,7 +26,7 @@ Claude Code's native skill discovery loads **every installed skill's name + desc
 │                                                                  │
 │ System prompt contains:                                          │
 │  • Mini-index: name + 1-line summary (~1k tokens for 80 skills)  │
-│  • 2 MCP tools from skill-radar                                  │
+│  • 2 MCP tools from skills-radar                                  │
 └──────────────────────────┬───────────────────────────────────────┘
                            │
         Agent decides:     ▼
@@ -110,7 +110,7 @@ Every ingested SKILL.md is treated as **adversarial input**. Skills are arbitrar
 
 | Tier | Source | Treatment |
 |---|---|---|
-| **TRUSTED** | Bundled `.skill-radar/builtin/` (project-vetted) | Pass through |
+| **TRUSTED** | Bundled `.skills-radar/builtin/` (project-vetted) | Pass through |
 | **VERIFIED** | Signed registry (TBD), `~/.claude/plugins/cache/claude-plugins-official/` | Light sanitization, log |
 | **USER** | `~/.claude/skills/`, project `.claude/skills/` (your own files) | Trusted local - light sanitization |
 | **UNTRUSTED** | Anything else (e.g., dynamically registered paths) | Strict sanitization, blocked patterns rejected |
@@ -176,7 +176,7 @@ Per Claude Code spec (May 2026), ingest accepts these fields:
 - [ ] `embedder.py` - sentence-transformers default, swappable
 - [ ] `store.py` - ChromaDB wrapper
 - [ ] `sanitize.py` - basic sanitization + trust tier assignment
-- [ ] `cli.py` - `skill-radar serve | index | list | doctor`
+- [ ] `cli.py` - `skills-radar serve | index | list | doctor`
 - [ ] Manual smoke test against the user's `~/.claude/skills/`
 
 ### Phase 2 - Production-ready (~4-5h)
@@ -200,7 +200,7 @@ Per Claude Code spec (May 2026), ingest accepts these fields:
 
 ### Phase 4 - Polish (post-launch)
 - [ ] Stats / telemetry (local, opt-in)
-- [ ] TUI dashboard (`skill-radar tui`)
+- [ ] TUI dashboard (`skills-radar tui`)
 - [ ] MLX embedder (Mac only)
 - [ ] Voyage / OpenAI embedder backends
 - [ ] Auto-discovery from GitHub repos (e.g., `awesome-agent-skills`)
@@ -208,17 +208,17 @@ Per Claude Code spec (May 2026), ingest accepts these fields:
 ## 9. CLI Surface (final)
 
 ```
-skill-radar serve [--transport stdio|http] [--port 6580]
-skill-radar index [--rebuild] [--paths PATH...]
-skill-radar list [--tag TAG] [--trust LEVEL]
-skill-radar mini-index --output PATH
-skill-radar doctor                    # sanity: paths, embedder, store, transport
-skill-radar config show|edit
+skills-radar serve [--transport stdio|http] [--port 6580]
+skills-radar index [--rebuild] [--paths PATH...]
+skills-radar list [--tag TAG] [--trust LEVEL]
+skills-radar mini-index --output PATH
+skills-radar doctor                    # sanity: paths, embedder, store, transport
+skills-radar config show|edit
 ```
 
 ## 10. Config
 
-`~/.config/skill-radar/config.yaml` (XDG-compliant):
+`~/.config/skills-radar/config.yaml` (XDG-compliant):
 
 ```yaml
 paths:
@@ -233,7 +233,7 @@ embedder:
 
 store:
   backend: chromadb
-  path: ~/.local/share/skill-radar/store
+  path: ~/.local/share/skills-radar/store
 
 transport:
   mode: stdio                # or 'http'
@@ -248,7 +248,7 @@ trust:
   default_tier: user
   trusted_paths:
     - ~/.claude/skills
-  blocked_patterns_file: ~/.config/skill-radar/blocked-patterns.txt
+  blocked_patterns_file: ~/.config/skills-radar/blocked-patterns.txt
 
 sanitization:
   max_skill_size_kb: 64
@@ -259,12 +259,12 @@ sanitization:
 ## 11. Public Release Plan
 
 ### Repo
-- `github.com/sdet-it/skill-radar` (or personal `github.com/dar-kow/skill-radar`)
+- `github.com/sdet-it/skills-radar` (or personal `github.com/dar-kow/skills-radar`)
 - License: **MIT**
 - Branding: minimal, neutral - no SDET-specific lock-in
 
 ### PyPI
-- Package: `skill-radar`
+- Package: `skills-radar`
 - Versioning: SemVer, start `0.1.0`
 - Publish via GitHub Actions on git tag
 
@@ -313,7 +313,7 @@ sanitization:
 
 ## 14. Definition of Done - v0.1.0 Release
 
-- [ ] `skill-radar serve` connects to Claude Code via `.mcp.json` config
+- [ ] `skills-radar serve` connects to Claude Code via `.mcp.json` config
 - [ ] User can drop a SKILL.md into `~/.claude/skills/foo/` and within 1s `search_skills("foo topic")` returns it
 - [ ] `load_skill("foo")` returns sanitized content with trust tier
 - [ ] All Anthropic gotchas from research handled (stdout, allowed-tools strip, name reserved, paths, size limit)
@@ -324,7 +324,7 @@ sanitization:
 
 ## 15. Open Questions
 
-1. **Repo home** - `github.com/sdet-it/skill-radar` (org) or `github.com/dar-kow/skill-radar` (personal)?
+1. **Repo home** - `github.com/sdet-it/skills-radar` (org) or `github.com/dar-kow/skills-radar` (personal)?
 2. **Trust registry** - for VERIFIED tier, do we host a JSON manifest in repo, or punt to v0.2?
 3. **Tag taxonomy** - should we publish a recommended `hub-tags` vocabulary (`a11y`, `perf`, `content`, `dev`, `qa`, ...) or let community converge?
 4. **Telemetry** - local-only opt-in stats from start, or post-1.0?
