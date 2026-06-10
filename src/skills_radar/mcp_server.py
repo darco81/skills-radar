@@ -52,14 +52,16 @@ async def search_skills(
     query: str,
     top_k: int = 5,
     tags: list[str] | None = None,
+    kind: str | None = None,
 ) -> dict[str, Any]:
-    """Search Claude Code skills by intent (hybrid BM25 + semantic).
+    """Search Claude Code skills, agents and commands by intent (hybrid BM25 + semantic).
 
-    Returns top-k matches with name, description, trust, score. Use when
-    intent is clear but the right skill name isn't.
+    Returns top-k matches with name, kind, description, trust, score. Use when
+    intent is clear but the right resource name isn't. Optional kind filter:
+    'skill' | 'agent' | 'command'.
     """
     app = _get_app()
-    matches = app.hybrid_search(query=query, top_k=top_k, tags=tags)
+    matches = app.hybrid_search(query=query, top_k=top_k, tags=tags, kind=kind)
     return {
         "matches": [_match_to_entry(m) for m in matches],
         "query_processed": query,
@@ -73,13 +75,15 @@ async def search_skills(
 
 @mcp.tool()
 async def load_skill(name: str, sandbox: bool = False) -> dict[str, Any]:
-    """Load full SKILL.md content by name. Returns sanitized body + trust tier.
+    """Load full resource content (skill / agent / command) by name.
 
-    Use when you know the skill name. Body re-read from disk on every call
-    so live edits are picked up.
+    Returns sanitized body + trust tier. Body re-read from disk on every
+    call so live edits are picked up. Agents and commands use namespaced
+    names ('agent:qa-reporter', 'cmd:perf-report'); bare names resolve
+    via skill → agent → command fallback.
 
     Args:
-        name: skill name from search_skills or mini-index.
+        name: resource name from search_skills or mini-index.
         sandbox: when True, also read bundled files (one level deep from
             SKILL.md), validate against safe-extension whitelist + size
             caps + path traversal + symlinks, and return their sanitized
@@ -113,6 +117,7 @@ async def load_skill(name: str, sandbox: bool = False) -> dict[str, Any]:
 
     return {
         "name": record.name,
+        "kind": record.kind,
         "frontmatter": _strip_cli_only_fields(record.frontmatter),
         "description": record.description,
         "when_to_use": record.when_to_use,
@@ -137,6 +142,7 @@ def _match_to_entry(m: dict[str, Any]) -> dict[str, Any]:
     meta = m["metadata"]
     return {
         "name": m["name"],
+        "kind": meta.get("kind", "skill"),
         "description": meta.get("description", ""),
         "when_to_use": meta.get("when_to_use", ""),
         "trust": meta.get("trust", "untrusted"),

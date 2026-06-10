@@ -28,7 +28,7 @@ FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n(.*)\Z", re.DOTALL)
 
 @dataclass
 class SkillRecord:
-    """Parsed + sanitized skill record. The full domain object."""
+    """Parsed + sanitized resource record (skill / agent / command)."""
 
     name: str
     description: str
@@ -47,6 +47,17 @@ class SkillRecord:
     platforms: list[str] = field(default_factory=list)
     requires_tools: list[str] = field(default_factory=list)
     fallback_for_tools: list[str] = field(default_factory=list)
+    kind: str = "skill"  # 'skill' | 'agent' | 'command'
+
+    @property
+    def uid(self) -> str:
+        """Store ID. Skills keep their bare name (backwards-compatible);
+        agents/commands are namespaced so a skill and an agent may share
+        a name without colliding."""
+        if self.kind == "skill":
+            return self.name
+        prefix = "agent" if self.kind == "agent" else "cmd"
+        return f"{prefix}:{self.name}"
 
 
 def parse_skill_file(
@@ -55,8 +66,15 @@ def parse_skill_file(
     trusted_paths: list[Path],
     max_size_kb: int = 64,
     strip_live_exec: bool = False,
+    kind: str = "skill",
 ) -> SkillRecord | None:
-    """Parse one SKILL.md file. Returns None if invalid (logged)."""
+    """Parse one resource file (SKILL.md / agent .md / command .md).
+
+    Returns None if invalid (logged). Strictness varies by kind:
+    skills and agents require frontmatter with a description; commands
+    may have no frontmatter at all (legacy format) - name then comes
+    from the filename and description from the first body line.
+    """
     path = path.expanduser().resolve()
     try:
         text = path.read_text(encoding="utf-8")
@@ -70,27 +88,34 @@ def parse_skill_file(
 
     match = FRONTMATTER_RE.match(text)
     if not match:
-        logger.debug("No YAML frontmatter in %s", path)
-        return None
-
-    fm_yaml, body = match.group(1), match.group(2)
-
-    try:
-        fm_data = yaml.safe_load(fm_yaml) or {}
-    except yaml.YAMLError as exc:
-        logger.warning("YAML parse error in %s: %s", path, exc)
-        return None
-
-    if not isinstance(fm_data, dict):
-        logger.warning("Frontmatter is not a dict in %s", path)
-        return None
+        if kind != "command":
+            logger.debug("No YAML frontmatter in %s", path)
+            return None
+        fm_data: dict = {}
+        body = text
+    else:
+        fm_yaml, body = match.group(1), match.group(2)
+        try:
+            fm_data = yaml.safe_load(fm_yaml) or {}
+        except yaml.YAMLError as exc:
+            logger.warning("YAML parse error in %s: %s", path, exc)
+            return None
+        if not isinstance(fm_data, dict):
+            logger.warning("Frontmatter is not a dict in %s", path)
+            return None
 
     name = fm_data.get("name")
+    if not name:
+        # Claude Code convention: name defaults to the directory name for
+        # skills, and to the filename for agents/commands.
+        name = path.parent.name if kind == "skill" else path.stem
     if not validate_name(name):
         logger.warning("Invalid or reserved name %r in %s", name, path)
         return None
 
     description = (fm_data.get("description") or "").strip()
+    if not description and kind == "command":
+        description = _first_body_line(body)
     when_to_use = (fm_data.get("when_to_use") or "").strip()
     radar_meta = _radar_meta(fm_data)
     hub_tags = _list_field(radar_meta, fm_data, "hub-tags", "hub_tags")
@@ -113,9 +138,10 @@ def parse_skill_file(
 
     trust = determine_trust_tier(path, trusted_paths)
     scope = _scope_from_path(path)
-    bundled_files = _collect_bundled_files(path)
+    bundled_files = _collect_bundled_files(path) if kind == "skill" else []
 
     return SkillRecord(
+        kind=kind,
         name=name,
         description=description,
         when_to_use=when_to_use,
@@ -164,22 +190,63 @@ def _list_field(radar_meta: dict, fm_data: dict, *keys: str) -> list[str]:
 
 def find_skill_files(roots: list[Path]) -> list[Path]:
     """Walk roots, return all SKILL.md paths."""
-    found: list[Path] = []
+    return [p for p, kind in find_resource_files(roots) if kind == "skill"]
+
+
+def classify_md_path(path: Path) -> str | None:
+    """Map a .md path to its resource kind, or None if not indexable.
+
+    SKILL.md → skill; any .md under an `agents/` dir → agent; any .md
+    under a `commands/` dir → command. Other markdown is ignored.
+    """
+    if path.suffix.lower() != ".md":
+        return None
+    if _is_in_excluded_dir(path):
+        return None
+    if path.name == "SKILL.md":
+        return "skill"
+    parts = set(path.parts[:-1])
+    if "agents" in parts:
+        return "agent"
+    if "commands" in parts:
+        return "command"
+    return None
+
+
+def find_resource_files(roots: list[Path]) -> list[tuple[Path, str]]:
+    """Walk roots, return (path, kind) for every indexable resource.
+
+    Follows the same exclusion rules for all kinds. Symlinked files
+    resolve before dedupe, so a skill reachable via two roots indexes once.
+    """
+    found: list[tuple[Path, str]] = []
     seen: set[Path] = set()
+    counts = {"skill": 0, "agent": 0, "command": 0}
     for root in roots:
         root = root.expanduser()
         if not root.exists():
             logger.debug("Skill root not found: %s", root)
             continue
-        for skill_md in root.rglob("SKILL.md"):
-            resolved = skill_md.resolve()
-            if resolved in seen:
+        for md in root.rglob("*.md"):
+            kind = classify_md_path(md)
+            if kind is None:
                 continue
-            if _is_in_excluded_dir(resolved):
+            try:
+                resolved = md.resolve()
+            except OSError:
+                continue
+            if resolved in seen or not resolved.exists():
                 continue
             seen.add(resolved)
-            found.append(resolved)
-    logger.info("Discovered %d SKILL.md files", len(found))
+            found.append((resolved, kind))
+            counts[kind] += 1
+    logger.info(
+        "Discovered %d resources (%d skills, %d agents, %d commands)",
+        len(found),
+        counts["skill"],
+        counts["agent"],
+        counts["command"],
+    )
     return found
 
 
@@ -193,14 +260,35 @@ def _is_in_excluded_dir(path: Path) -> bool:
 
 
 def _scope_from_path(path: Path) -> str:
-    """Categorize source: user / plugin / project / unknown."""
+    """Categorize source: user / plugin / project / unknown.
+
+    Handles both host paths (~/.claude/...) and the Docker bind-mount
+    layout (/skills/personal, /skills/plugins, /skills/projects/<name>).
+    """
+    posix = path.as_posix()
+
+    # Docker bind-mount layout (container deployments)
+    if posix.startswith("/skills/"):
+        parts = posix.split("/")
+        # ['', 'skills', '<mount>', ...]
+        mount = parts[2] if len(parts) > 2 else "?"
+        if mount.startswith("personal"):
+            return "user"
+        if mount == "plugins":
+            # /skills/plugins/<marketplace>/<plugin>/...
+            plugin_name = parts[4] if len(parts) > 4 else "?"
+            return f"plugin:{plugin_name}"
+        if mount == "projects":
+            project = parts[3] if len(parts) > 3 else "?"
+            return f"project:{project}"
+        return "unknown"
+
+    # Host layout
     home = Path.home()
-    user_skills = home / ".claude" / "skills"
-    plugins_root = home / ".claude" / "plugins" / "cache"
+    user_root = home / ".claude"
+    plugins_root = user_root / "plugins" / "cache"
 
     try:
-        if path.is_relative_to(user_skills):
-            return f"user:{user_skills}"
         if path.is_relative_to(plugins_root):
             try:
                 rel = path.relative_to(plugins_root)
@@ -208,16 +296,33 @@ def _scope_from_path(path: Path) -> str:
                 return f"plugin:{plugin_name}"
             except (ValueError, IndexError):
                 return "plugin:?"
+        for sub in ("skills", "agents", "commands"):
+            if path.is_relative_to(user_root / sub):
+                return "user"
     except (ValueError, OSError):
         pass
 
-    parts = path.as_posix().split("/")
+    parts = posix.split("/")
     for i, part in enumerate(parts):
-        if part == ".claude" and i + 1 < len(parts) and parts[i + 1] == "skills":
+        if part == ".claude" and i + 1 < len(parts) and parts[i + 1] in (
+            "skills",
+            "agents",
+            "commands",
+        ):
             project_root = "/".join(parts[:i])
             return f"project:{project_root}"
 
     return "unknown"
+
+
+def _first_body_line(body: str) -> str:
+    """First meaningful line of a body - description fallback for legacy
+    commands that ship no frontmatter. Strips markdown heading markers."""
+    for line in body.splitlines():
+        stripped = line.strip().lstrip("#").strip()
+        if stripped:
+            return stripped[:300]
+    return ""
 
 
 def _collect_bundled_files(skill_md_path: Path) -> list[str]:
