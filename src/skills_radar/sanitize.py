@@ -101,15 +101,19 @@ def determine_trust_tier(skill_path: Path, trusted_paths: list[Path]) -> TrustTi
     except (ValueError, OSError):
         pass
 
-    user_root = (Path.home() / ".claude" / "skills").resolve()
-    try:
-        if skill_path.is_relative_to(user_root):
-            return TrustTier.USER
-    except (ValueError, OSError):
-        pass
+    for sub in ("skills", "agents", "commands"):
+        user_root = (Path.home() / ".claude" / sub).resolve()
+        try:
+            if skill_path.is_relative_to(user_root):
+                return TrustTier.USER
+        except (ValueError, OSError):
+            pass
 
-    if ".claude/skills" in skill_path.as_posix() or ".claude\\skills" in str(skill_path):
-        return TrustTier.USER
+    posix = skill_path.as_posix()
+    win = str(skill_path)
+    for sub in ("skills", "agents", "commands"):
+        if f".claude/{sub}" in posix or f".claude\\{sub}" in win:
+            return TrustTier.USER
 
     return TrustTier.UNTRUSTED
 

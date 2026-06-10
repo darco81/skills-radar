@@ -107,8 +107,9 @@ def parse_skill_file(
     name = fm_data.get("name")
     if not name:
         # Claude Code convention: name defaults to the directory name for
-        # skills, and to the filename for agents/commands.
-        name = path.parent.name if kind == "skill" else path.stem
+        # skills, and to the filename for agents/commands. Lowercased so
+        # mixed-case filenames don't fail name validation.
+        name = (path.parent.name if kind == "skill" else path.stem).lower()
     if not validate_name(name):
         logger.warning("Invalid or reserved name %r in %s", name, path)
         return None
@@ -193,11 +194,18 @@ def find_skill_files(roots: list[Path]) -> list[Path]:
     return [p for p, kind in find_resource_files(roots) if kind == "skill"]
 
 
-def classify_md_path(path: Path) -> str | None:
+def classify_md_path(path: Path, root: Path | None = None) -> str | None:
     """Map a .md path to its resource kind, or None if not indexable.
 
-    SKILL.md → skill; any .md under an `agents/` dir → agent; any .md
-    under a `commands/` dir → command. Other markdown is ignored.
+    SKILL.md → skill; .md under an `agents/` dir → agent; .md under a
+    `commands/` dir → command (nested command subdirs are valid - Claude
+    Code namespaces them, e.g. `commands/perf/report.md` → /perf:report).
+
+    When `root` is given, agent/command dirs must be *anchored* - directly
+    under a `.claude` dir, inside the plugin cache, or at most two levels
+    below the scan root (covers `<mount>/agents` and `projects/<x>/agents`
+    bind-mount layouts). This stops arbitrary nested markdown (e.g.
+    `some-repo/src/commands/util.md`) from being ingested.
     """
     if path.suffix.lower() != ".md":
         return None
@@ -205,11 +213,22 @@ def classify_md_path(path: Path) -> str | None:
         return None
     if path.name == "SKILL.md":
         return "skill"
-    parts = set(path.parts[:-1])
-    if "agents" in parts:
-        return "agent"
-    if "commands" in parts:
-        return "command"
+    try:
+        parts = path.relative_to(root).parts[:-1] if root else path.parts[:-1]
+    except ValueError:
+        parts = path.parts[:-1]
+    for marker, kind in (("agents", "agent"), ("commands", "command")):
+        if marker not in parts:
+            continue
+        if root is None:
+            return kind
+        idx = parts.index(marker)
+        anchored = (
+            idx <= 2
+            or ".claude" in parts[:idx]
+            or parts[0] == "plugins"  # container plugin-cache mount (CC-managed layout)
+        )
+        return kind if anchored else None
     return None
 
 
@@ -228,7 +247,7 @@ def find_resource_files(roots: list[Path]) -> list[tuple[Path, str]]:
             logger.debug("Skill root not found: %s", root)
             continue
         for md in root.rglob("*.md"):
-            kind = classify_md_path(md)
+            kind = classify_md_path(md, root=root)
             if kind is None:
                 continue
             try:

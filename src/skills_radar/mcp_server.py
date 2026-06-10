@@ -117,6 +117,7 @@ async def load_skill(name: str, sandbox: bool = False) -> dict[str, Any]:
 
     return {
         "name": record.name,
+        "uid": record.uid,
         "kind": record.kind,
         "frontmatter": _strip_cli_only_fields(record.frontmatter),
         "description": record.description,

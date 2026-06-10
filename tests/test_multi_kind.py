@@ -104,12 +104,44 @@ class TestParseKinds:
         assert rec.uid == "my-skill"
 
 
+class TestRootAnchoring:
+    def test_nested_command_dir_accepted(self, tmp_path):
+        # Claude Code namespaces nested commands: commands/perf/report.md → /perf:report
+        assert (
+            classify_md_path(tmp_path / "commands" / "perf" / "report.md", root=tmp_path)
+            == "command"
+        )
+
+    def test_claude_anchored_deep_project_accepted(self, tmp_path):
+        p = tmp_path / "projects" / "x" / ".claude" / "commands" / "deploy.md"
+        assert classify_md_path(p, root=tmp_path) == "command"
+
+    def test_deep_unanchored_src_tree_rejected(self, tmp_path):
+        p = tmp_path / "repo" / "src" / "lib" / "commands" / "util.md"
+        assert classify_md_path(p, root=tmp_path) is None
+
+    def test_plugin_cache_layout_accepted(self, tmp_path):
+        p = tmp_path / "plugins" / "market" / "plug" / "1.0.0" / "agents" / "a.md"
+        assert classify_md_path(p, root=tmp_path) == "agent"
+
+    def test_without_root_stays_shape_only(self, tmp_path):
+        p = tmp_path / "repo" / "src" / "lib" / "commands" / "util.md"
+        assert classify_md_path(p) == "command"
+
+    def test_uppercase_stem_lowercased(self, tmp_path):
+        p = _write(tmp_path / "agents" / "QA-Reporter.md", AGENT_MD.replace("name: qa-reporter\n", ""))
+        rec = parse_skill_file(p, trusted_paths=[tmp_path], kind="agent")
+        assert rec is not None
+        assert rec.name == "qa-reporter"
+
+
 class TestDiscovery:
     def test_find_resource_files_mixed_tree(self, tmp_path):
         _write(tmp_path / "skills" / "alpha" / "SKILL.md", "---\nname: alpha\ndescription: a\n---\nx")
         _write(tmp_path / "agents" / "beta.md", AGENT_MD)
         _write(tmp_path / "commands" / "gamma.md", COMMAND_LEGACY)
         _write(tmp_path / "README.md", "# ignored")
+        _write(tmp_path / "repo" / "a" / "b" / "commands" / "junk.md", COMMAND_LEGACY)
 
         found = find_resource_files([tmp_path])
         kinds = sorted(kind for _, kind in found)
