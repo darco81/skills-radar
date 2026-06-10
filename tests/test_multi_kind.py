@@ -135,6 +135,43 @@ class TestRootAnchoring:
         assert rec.name == "qa-reporter"
 
 
+class TestWatcherBackend:
+    def test_polling_backend_selected(self):
+        import pytest
+
+        pytest.importorskip("watchdog")
+        from skills_radar.config import Config, WatcherConfig
+        from skills_radar.watcher import WatcherService
+        from watchdog.observers.polling import PollingObserver
+
+        class _StubApp:
+            config = Config(watcher=WatcherConfig(enabled=True, backend="polling", poll_interval_s=5))
+
+        svc = WatcherService(_StubApp())
+        assert isinstance(svc._make_observer(), PollingObserver)
+
+    def test_native_backend_default(self):
+        import pytest
+
+        pytest.importorskip("watchdog")
+        from skills_radar.config import Config
+        from skills_radar.watcher import WatcherService
+        from watchdog.observers.polling import PollingObserver
+
+        class _StubApp:
+            config = Config()
+
+        svc = WatcherService(_StubApp())
+        assert not isinstance(svc._make_observer(), PollingObserver)
+
+    def test_unknown_backend_rejected(self):
+        import pytest
+        from skills_radar.config import WatcherConfig
+
+        with pytest.raises(ValueError, match="watcher.backend"):
+            WatcherConfig(backend="fsevents")
+
+
 class TestDiscovery:
     def test_find_resource_files_mixed_tree(self, tmp_path):
         _write(tmp_path / "skills" / "alpha" / "SKILL.md", "---\nname: alpha\ndescription: a\n---\nx")

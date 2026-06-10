@@ -114,10 +114,28 @@ class WatcherConfig(BaseModel):
     """File-watcher (hot-reload) toggle. Pasywny - kqueue/inotify.
     ~8 MB stałego RAMu, 0 CPU gdy nic się nie zmienia.
     CLI --watch / --no-watch overrides this setting.
+
+    `backend: polling` swaps the native observer for watchdog's
+    PollingObserver (mtime snapshot diff every `poll_interval_s`).
+    Required for Docker bind mounts on macOS/Windows - VirtioFS/gRPC-FUSE
+    do not propagate host inotify events into the container, so the
+    native observer sits silent there. Costs one stat-scan of the tree
+    per interval - size the interval to your tree.
     """
 
     enabled: bool = False
     debounce_ms: int = 250
+    backend: str = "native"  # 'native' | 'polling'
+    poll_interval_s: float = 30.0
+
+    @field_validator("backend")
+    @classmethod
+    def _known_backend(cls, v: str) -> str:
+        allowed = {"native", "polling"}
+        if v not in allowed:
+            msg = f"watcher.backend must be one of {sorted(allowed)}, got {v!r}"
+            raise ValueError(msg)
+        return v
 
 
 class Config(BaseModel):

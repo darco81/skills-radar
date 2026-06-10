@@ -98,19 +98,37 @@ class SkillFileHandler(FileSystemEventHandler):
 
 
 class WatcherService:
-    """Owns the watchdog Observer + handler. Start/stop as a unit."""
+    """Owns the watchdog Observer + handler. Start/stop as a unit.
+
+    Observer backend comes from config: `native` (kqueue/inotify, free)
+    or `polling` (mtime snapshots - the only thing that works for Docker
+    bind mounts on macOS/Windows, where host file events never reach the
+    container).
+    """
 
     def __init__(self, app: AppContext) -> None:
         self.app = app
         self._observer: Observer | None = None  # type: ignore[type-arg]
-        self._handler = SkillFileHandler(app)
+        self._handler = SkillFileHandler(app, debounce_ms=app.config.watcher.debounce_ms)
+
+    def _make_observer(self) -> Observer:  # type: ignore[type-arg]
+        wcfg = self.app.config.watcher
+        if wcfg.backend == "polling":
+            from watchdog.observers.polling import PollingObserver
+
+            logger.info(
+                "Watcher backend: polling (interval %.0fs)", wcfg.poll_interval_s
+            )
+            return PollingObserver(timeout=wcfg.poll_interval_s)
+        logger.info("Watcher backend: native")
+        return Observer()
 
     def start(self) -> None:
         if self._observer is not None:
             logger.debug("Watcher already running")
             return
 
-        observer: Observer = Observer()  # type: ignore[type-arg]
+        observer: Observer = self._make_observer()  # type: ignore[type-arg]
         watched: list[Path] = []
         for raw in self.app.config.paths:
             root = Path(raw).expanduser()
