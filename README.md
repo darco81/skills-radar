@@ -106,6 +106,31 @@ Result: from ~6k tokens loaded upfront to ~1k tokens + on-demand. **~83% savings
 - 🤖 **Optional local-LLM query rewriter** (Ollama) - rewrites ambiguous queries into richer keyword phrases before embedding
 - ✈️ **Air-gapped friendly** - pre-baked Docker image, offline HF Hub flags
 - 🧪 **2-tool MCP surface** - `search_skills` + `load_skill`. Mirrors Anthropic's Tool Search Tool pattern. Eats own dogfood: tool descriptions stay under 200 chars.
+- 🚦 **Conditional activation** - Hermes-style deterministic pre-filters: `platforms` gating at index time, `requires_tools` / `fallback_for_tools` exposed in search results for client-side policy
+
+### Conditional activation
+
+Skills can declare activation conditions in frontmatter - namespaced under `metadata.radar.*` (agentskills.io convention, same pattern as Hermes' `metadata.hermes.*`), with top-level fallback:
+
+```yaml
+---
+name: figma-compare
+description: Compare Figma design with staging implementation.
+metadata:
+  radar:
+    platforms: [macos, linux]      # skipped at index time on other hosts
+    requires_tools: [figma-mcp]    # exposed in search results, not filtered
+    fallback_for_tools: [web-search]
+---
+```
+
+`platforms` is enforced server-side at index time. `requires_tools` / `fallback_for_tools` are **exposed, not enforced** - the server can't know the client's toolset, so environment policy is the consuming agent's call (same contract as the `trust` field).
+
+In Docker, set the platform explicitly in `~/.config/skills-radar/config.yaml` - auto-detect inside the container reports `linux`, not the platform of the user whose skills are indexed:
+
+```yaml
+platform: macos
+```
 
 ---
 

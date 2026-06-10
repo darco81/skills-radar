@@ -121,6 +121,11 @@ class WatcherConfig(BaseModel):
 
 
 class Config(BaseModel):
+    # Host platform for conditional activation: 'macos' | 'linux' | 'windows'.
+    # Empty = auto-detect from sys.platform. Docker deployments MUST set this
+    # explicitly - inside the container auto-detect reports 'linux', not the
+    # platform of the user whose skills are indexed.
+    platform: str = ""
     paths: list[Path] = Field(
         default_factory=lambda: [
             _expand("~/.claude/skills"),

@@ -61,18 +61,7 @@ async def search_skills(
     app = _get_app()
     matches = app.hybrid_search(query=query, top_k=top_k, tags=tags)
     return {
-        "matches": [
-            {
-                "name": m["name"],
-                "description": m["metadata"].get("description", ""),
-                "when_to_use": m["metadata"].get("when_to_use", ""),
-                "trust": m["metadata"].get("trust", "untrusted"),
-                "score": round(m["score"], 4),
-                "scope": m["metadata"].get("scope", "unknown"),
-                "hub_tags": _csv_to_list(m["metadata"].get("hub_tags", "")),
-            }
-            for m in matches
-        ],
+        "matches": [_match_to_entry(m) for m in matches],
         "query_processed": query,
         "total_indexed": app.store.count(),
         "weights": {
@@ -138,9 +127,33 @@ async def load_skill(name: str, sandbox: bool = False) -> dict[str, Any]:
     }
 
 
-def _csv_to_list(s: str) -> list[str]:
+def _match_to_entry(m: dict[str, Any]) -> dict[str, Any]:
+    """Shape one hybrid_search hit into a search_skills response entry.
+
+    requires_tools / fallback_for_tools are exposed (not filtered) - the
+    server can't know the client's toolset, so environment policy is the
+    consuming agent's call. Same contract as the `trust` field.
+    """
+    meta = m["metadata"]
+    return {
+        "name": m["name"],
+        "description": meta.get("description", ""),
+        "when_to_use": meta.get("when_to_use", ""),
+        "trust": meta.get("trust", "untrusted"),
+        "score": round(m["score"], 4),
+        "scope": meta.get("scope", "unknown"),
+        "hub_tags": _csv_to_list(meta.get("hub_tags", "")),
+        "requires_tools": _csv_to_list(meta.get("requires_tools", "")),
+        "fallback_for_tools": _csv_to_list(meta.get("fallback_for_tools", "")),
+    }
+
+
+def _csv_to_list(s: str | list[str]) -> list[str]:
+    """ChromaDB coerces list metadata to CSV strings; Qdrant keeps lists as-is."""
     if not s:
         return []
+    if isinstance(s, list):
+        return [str(x).strip() for x in s if str(x).strip()]
     return [x.strip() for x in s.split(",") if x.strip()]
 
 

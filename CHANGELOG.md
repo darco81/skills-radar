@@ -17,6 +17,21 @@ All notable changes to skills-radar are documented in this file. Format follows 
 - Crypto signing for VERIFIED tier
 - LLM-based prompt-injection scanner (extends regex catalog)
 
+## [v0.5.0a0] - 2026-06-10
+
+### Added - conditional activation (Hermes-inspired)
+
+Adopted from analysis of Nous Research's Hermes Agent skill routing (`agent/prompt_builder.py`): the only harness-side engineering in its model-pick architecture is deterministic pre-filtering of the skill index. skills-radar now does the same, one layer deeper (index time, not prompt-build time):
+
+1. **`metadata.radar.*` frontmatter namespace** - conditional activation fields per the agentskills.io convention (mirrors Hermes' `metadata.hermes.*`), with top-level fallback: `platforms`, `requires_tools`, `fallback_for_tools`. `hub-tags` is also readable from the namespace now.
+2. **Platform gating at index time** - skills declaring `platforms: [macos]` are skipped during reindex/hot-reload on non-matching hosts. New top-level config field `platform` ("" = auto-detect from `sys.platform`; Docker deployments must set it explicitly - the container reports `linux`).
+3. **Tool conditions exposed in search results** - `requires_tools` / `fallback_for_tools` returned per match in `search_skills` (not filtered server-side; the server can't know the client's toolset - same agent-side policy contract as `trust`).
+4. **Recall-bias instruction in mini-index header** - Hermes-style "if even partially relevant... err on the side of checking" nudge, addressing the weakest point of retrieval-first routing: the agent must decide to search at all.
+
+### Fixed
+
+- **Qdrant list-metadata crash** - `_csv_to_list` (mcp_server, mini_index) and `_split_tags` (app) assumed ChromaDB's CSV-string coercion; Qdrant keeps lists as-is in payload, so any skill with `hub-tags` would crash `search_skills` tag handling on the Qdrant backend. All three helpers now accept both shapes.
+
 ## [v0.4.0a0] - 2026-05-09
 
 ### Added - F5 backlog complete
