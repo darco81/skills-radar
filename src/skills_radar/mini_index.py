@@ -62,9 +62,12 @@ def generate_mini_index(
     lines.append("# Skills available")
     lines.append("")
     lines.append(
-        "Discovery is two-tier: this file is the surface map. To get full "
-        "instructions for a skill, call the `load_skill(name)` tool from the "
-        "`skills-radar` MCP server. For fuzzy intent, call `search_skills(query)`."
+        "Discovery is two-tier: this file is the surface map. Before acting on "
+        "a task, scan it - if a skill matches or is even partially relevant, "
+        "call `search_skills(query)` (fuzzy intent) or `load_skill(name)` from "
+        "the `skills-radar` MCP server and follow what it returns. When unsure, "
+        "err on the side of checking: one cheap search beats missing critical "
+        "instructions."
     )
     lines.append("")
     lines.append(f"_Total: {len(skills)} skills indexed._")
@@ -104,7 +107,10 @@ def _first_sentence(text: str, max_chars: int) -> str:
     return text
 
 
-def _csv_to_list(s: str) -> list[str]:
+def _csv_to_list(s: str | list[str]) -> list[str]:
+    """ChromaDB coerces list metadata to CSV strings; Qdrant keeps lists as-is."""
     if not s:
         return []
+    if isinstance(s, list):
+        return [str(x).strip() for x in s if str(x).strip()]
     return [x.strip() for x in s.split(",") if x.strip()]

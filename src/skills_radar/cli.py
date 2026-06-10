@@ -113,7 +113,7 @@ def list_skills(
     ] = None,
 ) -> None:
     """List indexed skills with metadata."""
-    from skills_radar.app import AppContext
+    from skills_radar.app import AppContext, _split_tags
 
     ctx = AppContext()
     items = ctx.store.list_all()
@@ -126,11 +126,8 @@ def list_skills(
     rows = 0
     for item in items:
         meta = item["metadata"]
-        if tag:
-            tags_csv = meta.get("hub_tags", "")
-            tags_list = [t.strip().lower() for t in tags_csv.split(",") if t.strip()]
-            if tag.lower() not in tags_list:
-                continue
+        if tag and tag.lower() not in _split_tags(meta.get("hub_tags", "")):
+            continue
         if trust and meta.get("trust", "") != trust:
             continue
         table.add_row(

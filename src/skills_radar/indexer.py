@@ -44,6 +44,9 @@ class SkillRecord:
     scope: str
     disable_model_invocation: bool = False
     bundled_files: list[str] = field(default_factory=list)
+    platforms: list[str] = field(default_factory=list)
+    requires_tools: list[str] = field(default_factory=list)
+    fallback_for_tools: list[str] = field(default_factory=list)
 
 
 def parse_skill_file(
@@ -89,9 +92,13 @@ def parse_skill_file(
 
     description = (fm_data.get("description") or "").strip()
     when_to_use = (fm_data.get("when_to_use") or "").strip()
-    hub_tags = fm_data.get("hub-tags") or fm_data.get("hub_tags") or []
-    if not isinstance(hub_tags, list):
-        hub_tags = []
+    radar_meta = _radar_meta(fm_data)
+    hub_tags = _list_field(radar_meta, fm_data, "hub-tags", "hub_tags")
+    platforms = [p.lower() for p in _list_field(radar_meta, fm_data, "platforms")]
+    requires_tools = _list_field(radar_meta, fm_data, "requires_tools", "requires-tools")
+    fallback_for_tools = _list_field(
+        radar_meta, fm_data, "fallback_for_tools", "fallback-for-tools"
+    )
     disable_invoke = bool(fm_data.get("disable-model-invocation", False))
 
     indexed_text = description
@@ -117,13 +124,42 @@ def parse_skill_file(
         body_sanitized=body_sanitized,
         warnings=warnings,
         frontmatter=fm_data,
-        hub_tags=[str(t) for t in hub_tags],
+        hub_tags=hub_tags,
         trust=trust,
         path=str(path),
         scope=scope,
         disable_model_invocation=disable_invoke,
         bundled_files=bundled_files,
+        platforms=platforms,
+        requires_tools=requires_tools,
+        fallback_for_tools=fallback_for_tools,
     )
+
+
+def _radar_meta(fm_data: dict) -> dict:
+    """Return the `metadata.radar.*` namespace (agentskills.io convention,
+    same pattern as Hermes' `metadata.hermes.*`). Callers fall back to
+    top-level keys when a field is absent here."""
+    meta = fm_data.get("metadata")
+    if not isinstance(meta, dict):
+        return {}
+    radar = meta.get("radar")
+    return radar if isinstance(radar, dict) else {}
+
+
+def _list_field(radar_meta: dict, fm_data: dict, *keys: str) -> list[str]:
+    """First list value found: namespaced keys win over top-level.
+
+    Bare scalars coerce to single-item lists - `platforms: macos` is natural
+    YAML and must gate, not silently fall open to 'no constraint'."""
+    for source in (radar_meta, fm_data):
+        for key in keys:
+            val = source.get(key)
+            if isinstance(val, (str, int, float)):
+                val = [val]
+            if isinstance(val, list):
+                return [str(x).strip() for x in val if str(x).strip()]
+    return []
 
 
 def find_skill_files(roots: list[Path]) -> list[Path]:

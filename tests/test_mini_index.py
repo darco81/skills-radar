@@ -114,3 +114,13 @@ def test_generate_mini_index_writes_header(tmp_path: Path):
     assert "AUTO-GENERATED" in content
     assert "Skills available" in content
     assert "Total: 0 skills" in content
+
+
+def test_generate_mini_index_header_has_recall_instruction(tmp_path: Path):
+    """Hermes-inspired recall bias: the agent must be told to err on the
+    side of checking, otherwise the mini-index is a map nobody opens."""
+    out = tmp_path / "INDEX.md"
+    generate_mini_index([], output=out)
+    content = out.read_text()
+    assert "even partially relevant" in content
+    assert "err on the side of checking" in content

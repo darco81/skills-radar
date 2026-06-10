@@ -7,6 +7,7 @@ CLI both consume this; tests construct it with custom config.
 from __future__ import annotations
 
 import logging
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -28,11 +29,28 @@ def _tokenize(text: str) -> list[str]:
     return text.lower().split()
 
 
+def _detect_platform() -> str:
+    """Map sys.platform to the agentskills-style platform name."""
+    if sys.platform == "darwin":
+        return "macos"
+    if sys.platform.startswith("win"):
+        return "windows"
+    return "linux"
+
+
+def _platform_matches(platforms: list[str], current: str) -> bool:
+    """Empty list = no constraint (all platforms)."""
+    if not platforms:
+        return True
+    return current in {p.strip().lower() for p in platforms}
+
+
 class AppContext:
     """Holds the running services. Constructed once at server startup."""
 
     def __init__(self, config: Config | None = None) -> None:
         self.config = config or Config.load()
+        self.platform = (self.config.platform or "").strip().lower() or _detect_platform()
         self.embedder: EmbedderProtocol = make_embedder(
             self.config.embedder.backend, self.config.embedder.model
         )
@@ -90,6 +108,14 @@ class AppContext:
                 continue
             if rec.disable_model_invocation:
                 logger.debug("Skipping model-invocation-disabled: %s", rec.name)
+                continue
+            if not _platform_matches(rec.platforms, self.platform):
+                logger.debug(
+                    "Skipping platform-gated %s (wants %s, host is %s)",
+                    rec.name,
+                    rec.platforms,
+                    self.platform,
+                )
                 continue
             records.append(rec)
 
@@ -211,6 +237,14 @@ class AppContext:
         if rec.disable_model_invocation:
             logger.debug("Watcher upsert: model-invocation-disabled, skip: %s", rec.name)
             return
+        if not _platform_matches(rec.platforms, self.platform):
+            logger.debug(
+                "Watcher upsert: platform-gated, skip: %s (wants %s, host is %s)",
+                rec.name,
+                rec.platforms,
+                self.platform,
+            )
+            return
         existing = self.store.get(rec.name)
         if existing is not None:
             existing_path = existing.get("metadata", {}).get("path", "")
@@ -302,12 +336,18 @@ def _record_to_metadata(r: SkillRecord) -> dict[str, Any]:
         "bundled_files": r.bundled_files,
         "disable_invoke": r.disable_model_invocation,
         "warnings": r.warnings,
+        "platforms": r.platforms,
+        "requires_tools": r.requires_tools,
+        "fallback_for_tools": r.fallback_for_tools,
     }
 
 
-def _split_tags(s: str) -> set[str]:
+def _split_tags(s: str | list[str]) -> set[str]:
+    """ChromaDB coerces list metadata to CSV strings; Qdrant keeps lists as-is."""
     if not s:
         return set()
+    if isinstance(s, list):
+        return {str(t).strip().lower() for t in s if str(t).strip()}
     return {t.strip().lower() for t in s.split(",") if t.strip()}
 
 
