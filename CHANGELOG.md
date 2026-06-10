@@ -30,7 +30,8 @@ Adopted from analysis of Nous Research's Hermes Agent skill routing (`agent/prom
 
 ### Fixed
 
-- **Qdrant list-metadata crash** - `_csv_to_list` (mcp_server, mini_index) and `_split_tags` (app) assumed ChromaDB's CSV-string coercion; Qdrant keeps lists as-is in payload, so any skill with `hub-tags` would crash `search_skills` tag handling on the Qdrant backend. All three helpers now accept both shapes.
+- **Qdrant list-metadata crash** - `_csv_to_list` (mcp_server, mini_index) and `_split_tags` (app) assumed ChromaDB's CSV-string coercion; Qdrant keeps lists as-is in payload, so any skill with `hub-tags` would crash `search_skills` tag handling on the Qdrant backend. All three helpers now accept both shapes. Review pass caught a fourth instance: `skills-radar list --tag` (cli.py) had the same raw `.split(",")` - now routed through `_split_tags`.
+- **Bare-scalar conditional fields fail-closed** - `platforms: macos` (natural YAML, not a list) was silently treated as "no constraint"; scalars now coerce to single-item lists so the gate actually gates.
 
 ## [v0.4.0a0] - 2026-05-09
 

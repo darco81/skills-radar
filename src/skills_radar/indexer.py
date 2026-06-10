@@ -148,10 +148,15 @@ def _radar_meta(fm_data: dict) -> dict:
 
 
 def _list_field(radar_meta: dict, fm_data: dict, *keys: str) -> list[str]:
-    """First list value found: namespaced keys win over top-level."""
+    """First list value found: namespaced keys win over top-level.
+
+    Bare scalars coerce to single-item lists - `platforms: macos` is natural
+    YAML and must gate, not silently fall open to 'no constraint'."""
     for source in (radar_meta, fm_data):
         for key in keys:
             val = source.get(key)
+            if isinstance(val, (str, int, float)):
+                val = [val]
             if isinstance(val, list):
                 return [str(x).strip() for x in val if str(x).strip()]
     return []

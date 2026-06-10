@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from skills_radar.app import AppContext, _detect_platform, _platform_matches
+from skills_radar.app import AppContext, _detect_platform, _platform_matches, _split_tags
 from skills_radar.config import Config, StoreConfig, TrustConfig
 from skills_radar.indexer import parse_skill_file
 from skills_radar.mcp_server import _match_to_entry
@@ -101,6 +101,30 @@ def test_parse_radar_namespace_wins_over_top_level(tmp_path: Path):
     assert rec.platforms == ["macos"]
 
 
+def test_parse_scalar_coerced_to_single_item_list(tmp_path: Path):
+    """`platforms: macos` (bare YAML scalar) is natural to write - it must
+    gate, not silently fall open to 'no constraint'."""
+    skill = _write(
+        tmp_path / "scalar" / "SKILL.md",
+        """\
+        ---
+        name: scalar-skill
+        description: Scalar platform value.
+        metadata:
+          radar:
+            platforms: macos
+            requires_tools: figma-mcp
+        ---
+
+        body
+        """,
+    )
+    rec = parse_skill_file(skill, trusted_paths=[tmp_path])
+    assert rec is not None
+    assert rec.platforms == ["macos"]
+    assert rec.requires_tools == ["figma-mcp"]
+
+
 def test_parse_defaults_empty(tmp_path: Path):
     skill = _write(
         tmp_path / "plain" / "SKILL.md",
@@ -118,6 +142,15 @@ def test_parse_defaults_empty(tmp_path: Path):
     assert rec.platforms == []
     assert rec.requires_tools == []
     assert rec.fallback_for_tools == []
+
+
+def test_split_tags_tolerates_both_shapes():
+    """Qdrant payload keeps lists; ChromaDB coerces to CSV. The cli `list
+    --tag` path crashes on Qdrant without this (review finding)."""
+    assert _split_tags("qa, DEV") == {"qa", "dev"}
+    assert _split_tags(["QA", " dev "]) == {"qa", "dev"}
+    assert _split_tags([]) == set()
+    assert _split_tags("") == set()
 
 
 # ---------------------------------------------------------------------------
