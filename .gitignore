@@ -70,3 +70,7 @@ chroma_db/
 # uv
 uv.lock
 .uv/
+
+# machine-local deployment files
+docker-compose.override.yml
+config.local.yaml

@@ -71,10 +71,9 @@ class SkillFileHandler(FileSystemEventHandler):
 
     @staticmethod
     def _is_skill_path(path: Path) -> bool:
-        if path.name != "SKILL.md":
-            return False
-        excluded = {"node_modules", ".venv", "venv", "env", "__pycache__", ".git", "dist", "build"}
-        return not any(part in excluded for part in path.parts)
+        from skills_radar.indexer import classify_md_path
+
+        return classify_md_path(path) is not None
 
     def _schedule(self, path: Path, action: str) -> None:
         """Debounced dispatch - coalesces rapid editor saves."""

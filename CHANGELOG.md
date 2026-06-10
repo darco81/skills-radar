@@ -17,6 +17,23 @@ All notable changes to skills-radar are documented in this file. Format follows 
 - Crypto signing for VERIFIED tier
 - LLM-based prompt-injection scanner (extends regex catalog)
 
+## [v0.6.0a0] - 2026-06-10
+
+### Added - multi-kind index: skills + subagents + slash commands
+
+One index for everything Claude Code can load. Discovery is path-shape driven (`classify_md_path`): `SKILL.md` → `skill`, `agents/*.md` → `agent`, `commands/**/*.md` → `command`.
+
+1. **Kind-aware records** - `SkillRecord.kind` + namespaced store ids (`agent:<name>`, `cmd:<name>`); skills keep bare names, so existing `load_skill` calls are fully backwards-compatible. A skill and an agent may share a name without colliding.
+2. **`search_skills(kind=...)` filter** - optional `'skill' | 'agent' | 'command'`; every match and `load_skill` response now carries a `kind` field.
+3. **Bare-name fallback in `load_skill`** - unknown bare names resolve via skill → agent → command before giving up.
+4. **Lenient command parsing** - legacy commands without frontmatter index too: name from filename, description from the first body line. Agents require frontmatter with a description.
+5. **Name fallback per Claude Code convention** - missing frontmatter `name` defaults to the directory name (skills) or file stem (agents/commands); fixes silently-dropped plugin skills that relied on the directory-name convention.
+6. **Container-aware `scope`** - entries indexed from Docker bind mounts now resolve to `user` / `project:<name>` / `plugin:<name>` instead of `unknown` (`/skills/personal*`, `/skills/projects/<name>`, `/skills/plugins/<marketplace>/<plugin>`).
+7. **Watcher covers all kinds** - hot-reload reacts to agent/command `.md` changes, not just `SKILL.md`.
+8. Tests: `tests/test_multi_kind.py` (classification, per-kind parsing rules, mixed-tree discovery).
+
+Deployment note: project `.claude/` roots mount under `/skills/projects/<name>` via an untracked `docker-compose.override.yml`; a mounted config extends `trusted_paths` accordingly. Example in README.
+
 ## [v0.5.0a0] - 2026-06-10
 
 ### Added - conditional activation (Hermes-inspired)

@@ -15,7 +15,12 @@ from rank_bm25 import BM25Okapi
 
 from skills_radar.config import Config
 from skills_radar.embedder import EmbedderProtocol, make_embedder
-from skills_radar.indexer import SkillRecord, find_skill_files, parse_skill_file
+from skills_radar.indexer import (
+    SkillRecord,
+    classify_md_path,
+    find_resource_files,
+    parse_skill_file,
+)
 from skills_radar.reranker import OVERSAMPLE_WHEN_ENABLED, Reranker, make_reranker
 from skills_radar.rewriter import QueryRewriter, make_rewriter
 from skills_radar.sanitize import TrustTier
@@ -95,14 +100,15 @@ class AppContext:
         if rebuild:
             self.store.reset()
 
-        files = find_skill_files(self.config.paths)
+        files = find_resource_files(self.config.paths)
         records: list[SkillRecord] = []
-        for f in files:
+        for f, kind in files:
             rec = parse_skill_file(
                 f,
                 trusted_paths=self.config.trust.trusted_paths,
                 max_size_kb=self.config.sanitization.max_skill_size_kb,
                 strip_live_exec=self.config.sanitization.strip_live_exec,
+                kind=kind,
             )
             if rec is None:
                 continue
@@ -127,14 +133,17 @@ class AppContext:
             self._bm25_ids = []
             return 0
 
-        ids = [r.name for r in records]
+        ids = [r.uid for r in records]
         texts = [r.indexed_text for r in records]
         embeddings = self.embedder.embed_batch(texts)
         metadatas = [_record_to_metadata(r) for r in records]
 
         self.store.upsert_batch(ids, embeddings, metadatas, texts)
         self._rebuild_bm25_from_store()
-        logger.info("Reindexed %d skills", len(records))
+        by_kind: dict[str, int] = {}
+        for r in records:
+            by_kind[r.kind] = by_kind.get(r.kind, 0) + 1
+        logger.info("Reindexed %d resources (%s)", len(records), by_kind)
         self.telemetry.log_index(
             count=len(records),
             duration_ms=(_time.perf_counter() - _t0) * 1000.0,
@@ -154,6 +163,7 @@ class AppContext:
         query: str,
         top_k: int,
         tags: list[str] | None = None,
+        kind: str | None = None,
     ) -> list[dict[str, Any]]:
         """Hybrid retrieval - fused semantic + BM25 scores. Returns ranked list."""
         import time as _time
@@ -202,6 +212,12 @@ class AppContext:
                 if wanted.intersection(_split_tags(r["metadata"].get("hub_tags", "")))
             ]
 
+        if kind:
+            wanted_kind = kind.strip().lower()
+            fused = [
+                r for r in fused if r["metadata"].get("kind", "skill") == wanted_kind
+            ]
+
         fused.sort(key=lambda r: r["score"], reverse=True)
 
         # Optional reranker over a wider candidate pool - only if enabled and
@@ -224,12 +240,14 @@ class AppContext:
         return result
 
     def handle_change_upsert(self, path: Path) -> None:
-        """Re-index a single SKILL.md (created/modified). Used by watcher."""
+        """Re-index a single resource file (created/modified). Used by watcher."""
+        kind = classify_md_path(path) or "skill"
         rec = parse_skill_file(
             path,
             trusted_paths=self.config.trust.trusted_paths,
             max_size_kb=self.config.sanitization.max_skill_size_kb,
             strip_live_exec=self.config.sanitization.strip_live_exec,
+            kind=kind,
         )
         if rec is None:
             logger.debug("Watcher upsert: invalid skill ignored: %s", path)
@@ -245,7 +263,7 @@ class AppContext:
                 self.platform,
             )
             return
-        existing = self.store.get(rec.name)
+        existing = self.store.get(rec.uid)
         if existing is not None:
             existing_path = existing.get("metadata", {}).get("path", "")
             if existing_path and existing_path != str(path):
@@ -254,7 +272,7 @@ class AppContext:
                 if not _candidate_wins(rec.trust.value, ex_trust):
                     logger.debug(
                         "Watcher upsert: lower-priority %s (%s) skipped - kept %s (%s)",
-                        rec.name,
+                        rec.uid,
                         rec.trust.value,
                         existing_path,
                         ex_trust,
@@ -263,9 +281,9 @@ class AppContext:
 
         embedding = self.embedder.embed(rec.indexed_text)
         metadata = _record_to_metadata(rec)
-        self.store.upsert(rec.name, embedding, metadata, rec.indexed_text)
+        self.store.upsert(rec.uid, embedding, metadata, rec.indexed_text)
         self._rebuild_bm25_from_store()
-        logger.info("Watcher upsert: %s (%s)", rec.name, path)
+        logger.info("Watcher upsert: %s (%s)", rec.uid, path)
 
     def handle_change_delete(self, path: Path) -> None:
         """Remove a skill whose SKILL.md was deleted or moved away."""
@@ -283,11 +301,20 @@ class AppContext:
         logger.info("Watcher delete: %s (%s)", name, path)
 
     def load_record(self, name: str) -> tuple[SkillRecord | None, dict[str, Any] | None]:
-        """Re-parse SKILL.md fresh from disk. Avoids stale-cache bugs."""
+        """Re-parse a resource fresh from disk. Avoids stale-cache bugs.
+
+        Accepts a bare skill name, a namespaced id ('agent:x' / 'cmd:x'),
+        or a bare agent/command name (resolved via prefix fallback).
+        """
         import time as _time
 
         _t0 = _time.perf_counter()
         stored = self.store.get(name)
+        if stored is None and ":" not in name:
+            for prefix in ("agent:", "cmd:"):
+                stored = self.store.get(f"{prefix}{name}")
+                if stored is not None:
+                    break
         if stored is None:
             self.telemetry.log_load(
                 name,
@@ -313,6 +340,7 @@ class AppContext:
             trusted_paths=self.config.trust.trusted_paths,
             max_size_kb=self.config.sanitization.max_skill_size_kb,
             strip_live_exec=self.config.sanitization.strip_live_exec,
+            kind=stored["metadata"].get("kind", "skill"),
         )
         body_len = len(record.body_sanitized) if record else 0
         self.telemetry.log_load(
@@ -327,6 +355,8 @@ class AppContext:
 
 def _record_to_metadata(r: SkillRecord) -> dict[str, Any]:
     return {
+        "kind": r.kind,
+        "display_name": r.name,
         "description": r.description,
         "when_to_use": r.when_to_use,
         "hub_tags": r.hub_tags,
@@ -381,7 +411,7 @@ _TIER_PRIORITY = {
 
 
 def _dedupe_by_name(records: list[SkillRecord]) -> list[SkillRecord]:
-    """Resolve same-name collisions across scan paths.
+    """Resolve same-uid collisions across scan paths (per kind).
 
     Priority (lowest wins): trusted → user → verified → untrusted.
     Within the same tier: latest mtime wins. Plugin caches with multiple
@@ -389,20 +419,20 @@ def _dedupe_by_name(records: list[SkillRecord]) -> list[SkillRecord]:
     """
     by_name: dict[str, SkillRecord] = {}
     for rec in records:
-        existing = by_name.get(rec.name)
+        existing = by_name.get(rec.uid)
         if existing is None:
-            by_name[rec.name] = rec
+            by_name[rec.uid] = rec
             continue
         if _is_higher_priority(rec, existing):
             logger.debug(
                 "Dedup: %r - %s (%s) supersedes %s (%s)",
-                rec.name,
+                rec.uid,
                 rec.path,
                 rec.trust.value,
                 existing.path,
                 existing.trust.value,
             )
-            by_name[rec.name] = rec
+            by_name[rec.uid] = rec
     return list(by_name.values())
 
 

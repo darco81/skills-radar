@@ -3,7 +3,7 @@
 > **Lazy-loading skill discovery for Claude Code (and other MCP clients).**
 > Stop bleeding context tokens on skills you might never use.
 
-`skills-radar` is a local **MCP server** that mirrors Anthropic's [MCP Tool Search Tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool) pattern - but for **Skills**. Instead of preloading every skill's metadata into the system prompt at session start (default Claude Code behavior), `skills-radar` exposes two tools (`search_skills`, `load_skill`) so the agent fetches only what's relevant to the current task.
+`skills-radar` is a local **MCP server** that mirrors Anthropic's [MCP Tool Search Tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool) pattern - but for **Skills, subagents and slash commands**. Instead of preloading every skill's metadata into the system prompt at session start (default Claude Code behavior), `skills-radar` exposes two tools (`search_skills`, `load_skill`) so the agent fetches only what's relevant to the current task - across every scope you mount: personal, project and plugin.
 
 **Why this exists:** Anthropic shipped Tool Search for MCP tools in late 2025 (85% token reduction, +8.6% accuracy on Opus 4.5). They haven't shipped the equivalent for Skills yet. With 80+ skills across personal, project, and plugin scopes, your `/doctor` is probably bleeding 5-10k tokens before you type a word. This fixes that.
 
@@ -107,6 +107,7 @@ Result: from ~6k tokens loaded upfront to ~1k tokens + on-demand. **~83% savings
 - ✈️ **Air-gapped friendly** - pre-baked Docker image, offline HF Hub flags
 - 🧪 **2-tool MCP surface** - `search_skills` + `load_skill`. Mirrors Anthropic's Tool Search Tool pattern. Eats own dogfood: tool descriptions stay under 200 chars.
 - 🚦 **Conditional activation** - Hermes-style deterministic pre-filters: `platforms` gating at index time, `requires_tools` / `fallback_for_tools` exposed in search results for client-side policy
+- 🧩 **Multi-kind index** - one index for skills (`SKILL.md`), subagents (`agents/*.md`) and slash commands (`commands/**/*.md`); filter with `kind=` in search, load via namespaced ids (`agent:name`, `cmd:name`) or bare-name fallback
 
 ### Conditional activation
 
@@ -130,6 +131,31 @@ In Docker, set the platform explicitly in `~/.config/skills-radar/config.yaml` -
 
 ```yaml
 platform: macos
+```
+
+### Multi-kind index: skills, agents, commands
+
+Everything Claude Code can load is discoverable from one index. Discovery is path-shape driven, no configuration needed:
+
+| Path shape | Kind | Index id |
+|---|---|---|
+| `**/SKILL.md` | `skill` | bare name (`graphify`) |
+| `**/agents/*.md` | `agent` | `agent:<name>` |
+| `**/commands/**/*.md` | `command` | `cmd:<name>` |
+
+- `search_skills(query, kind="agent")` filters by kind; every match carries a `kind` field.
+- `load_skill("agent:qa-reporter")` or just `load_skill("qa-reporter")` - bare names resolve via skill → agent → command fallback, so a skill and an agent may share a name without colliding.
+- Names follow Claude Code conventions: missing frontmatter `name` falls back to the directory name (skills) or filename (agents/commands). Legacy commands without frontmatter index too - description comes from the first body line.
+- Scope is derived per entry (`user`, `project:<name>`, `plugin:<name>`), including Docker bind-mount layouts (`/skills/personal`, `/skills/projects/<name>`, `/skills/plugins`).
+
+To index project resources in Docker, mount each project's `.claude/` under `/skills/projects/<name>` (a `docker-compose.override.yml` keeps machine-specific mounts out of the repo):
+
+```yaml
+services:
+  skills-radar:
+    volumes:
+      - ${HOME}/.claude/agents:/skills/personal-extra/agents:ro
+      - ${HOME}/dev/my-project/.claude:/skills/projects/my-project:ro
 ```
 
 ---
