@@ -17,6 +17,12 @@ All notable changes to skills-radar are documented in this file. Format follows 
 - Crypto signing for VERIFIED tier
 - LLM-based prompt-injection scanner (extends regex catalog)
 
+## [v0.6.1a0] - 2026-06-10
+
+### Added - polling watcher backend (Docker bind-mount hot reload)
+
+`watcher.backend: polling` (+ `poll_interval_s`, default 30 s) swaps the native observer for watchdog's `PollingObserver`. Native inotify/kqueue never fires for Docker bind mounts on macOS/Windows - VirtioFS/gRPC-FUSE don't propagate host file events into the container, so the watcher sat silent and every edit needed a manual `skills-radar index`. Polling diffs mtime snapshots instead, at the cost of one stat-scan of the tree per interval - size the interval to your tree. Default stays `native` (free, correct on Linux/bare-metal). The handler now also honors the configured `debounce_ms` (was hardcoded at construction).
+
 ## [v0.6.0a0] - 2026-06-10
 
 ### Added - multi-kind index: skills + subagents + slash commands

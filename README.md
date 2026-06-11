@@ -97,7 +97,7 @@ Result: from ~6k tokens loaded upfront to ~1k tokens + on-demand. **~83% savings
 ## Features
 
 - 🔍 **Hybrid retrieval** - BM25 (lexical) + dense embeddings (semantic), 70/30 by default
-- 🔥 **Hot reload** - drop a SKILL.md, indexed in <1s via `watchdog` (no Claude restart)
+- 🔥 **Hot reload** - drop a SKILL.md, indexed in <1s via `watchdog` (no Claude restart); for Docker bind mounts on macOS/Windows set `watcher.backend: polling` - VirtioFS doesn't propagate inotify into containers
 - 🛡️ **Threat model day-one** - trust tiers (TRUSTED / VERIFIED / USER / UNTRUSTED), prompt-injection scanning, size limits, XML-injection stripping
 - 🪶 **Light by default** - sentence-transformers (90MB) + ChromaDB (zero deps)
 - 🔌 **Pluggable** - swap embedder (sentence-transformers, MLX [planned], Voyage [planned], OpenAI [planned]); swap store (ChromaDB default, Qdrant [planned])
