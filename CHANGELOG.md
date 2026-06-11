@@ -8,7 +8,7 @@ All notable changes to skills-radar are documented in this file. Format follows 
 
 SPEC §5 claimed UNTRUSTED skills get "blocked patterns rejected" - the code never rejected anything; injection matches only append warnings. Docs (SPEC §5, README, `docs/threat-model.md`) now state the warn-don't-block default explicitly: enforcement is the consuming agent's call via the `trust` + `warnings` fields from `load_skill`. New opt-in config `sanitization.reject_untrusted_on_injection` (default `false`) adds a real fail-closed path: UNTRUSTED-tier files carrying an injection warning are rejected at index time (reindex + watcher upsert; never `load_record`, never USER/VERIFIED/TRUSTED). Also fixed the dangling `AppContext.reindex` docstring (was a no-op literal after the timing setup), reconciled the README with reality (status line + phase table v0.1 → v0.6.1a0 with F1-F4 shipped; license "MIT (planned)" → MIT; backend `[planned]` markers cleared - MLX/OpenAI/Voyage embedders and Qdrant/FAISS stores all shipped), retired the stale "Planned for v0.3.0 / v0.4.0" subsections here (every shipped item is documented in its release section; the PyPI publish now has its own v0.4.0a1 entry below), and documented the description-quality retrieval constraint in `docs/context-engineering.md`. Tests: `tests/test_reject_untrusted.py` (gate on/off, USER tier never rejected).
 
-## [v0.6.1a0] - 2026-06-10
+## [v0.6.1a0] - 2026-06-11
 
 ### Added - polling watcher backend (Docker bind-mount hot reload)
 

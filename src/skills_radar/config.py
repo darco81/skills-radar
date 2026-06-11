@@ -50,7 +50,7 @@ class RewriterConfig(BaseModel):
 
 
 class RerankerConfig(BaseModel):
-    backend: str = "none"  # 'none' | 'ollama' | 'mlx' (mlx not yet implemented)
+    backend: str = "none"  # 'none' | 'ollama' | 'mlx'
     model: str = "gemma4:e4b"
     url: str = "http://localhost:11434"
     timeout: float = 8.0
