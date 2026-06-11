@@ -81,8 +81,8 @@ UTF-8 byte length per SKILL.md is capped at 64KB by default (`sanitization.max_s
 
 ## What we do NOT do
 
-- **No execution** - skills-radar never runs commands, never imports skill code, never resolves file references inside SKILL.md. We only index and serve.
-- **No automatic policy** - we surface trust tier and warnings; the agent decides whether to honor them.
+- **No execution** - skills-radar never runs commands and never imports or executes skill code. It does not resolve file references on its own; the sole exception is `load_skill(sandbox=True)`, an explicit per-call opt-in that reads bundled files one level deep under strict validation (extension whitelist, size caps, path-traversal + symlink rejection) and returns them as inert text.
+- **No automatic policy, with one opt-in exception** - by default we surface trust tier and warnings and let the agent decide. The single exception is the opt-in `sanitization.reject_untrusted_on_injection` gate (default off), which drops flagged UNTRUSTED skills at index time.
 - **No signature-based trust yet** - VERIFIED tier is path-based. Ed25519 signing primitives shipped (`signing.py`: sign/verify + `SKILL.md.sig` sidecars), but nothing wires them into trust-tier assignment yet.
 
 ## Recommendations for downstream agents

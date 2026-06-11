@@ -139,7 +139,7 @@ Every ingested SKILL.md is treated as **adversarial input**. Skills are arbitrar
 | **Transport** | Streamable HTTP (`stateless_http=True, json_response=True`) | stdio (local dev) |
 | **Embedder** | `sentence-transformers/all-MiniLM-L6-v2` (90MB, CPU-fast) | `bge-small-en-v1.5`, MLX (Mac), OpenAI/Voyage (cloud) |
 | **Lexical retrieval** | `rank_bm25` (BM25Okapi) | - |
-| **Vector store** | ChromaDB (embedded, zero-deps, persistent) | Qdrant (advanced users) |
+| **Vector store** | ChromaDB (embedded, zero-deps, persistent) | Qdrant (advanced users), FAISS (`[faiss]` extra) |
 | **File watcher** | `watchdog` | - |
 | **CLI** | `typer` + `rich` | - |
 | **Config** | `pydantic-settings` + YAML | - |
@@ -172,40 +172,40 @@ Per Claude Code spec (May 2026), ingest accepts these fields:
 ## 8. Phases
 
 ### Phase 1 - MVP (~3-4h)
-- [ ] `pyproject.toml` + package skeleton
-- [ ] `mcp_server.py` - FastMCP server with `search_skills` + `load_skill` tools (stdio transport)
-- [ ] `indexer.py` - scan SKILL.md from configured paths
-- [ ] `embedder.py` - sentence-transformers default, swappable
-- [ ] `store.py` - ChromaDB wrapper
-- [ ] `sanitize.py` - basic sanitization + trust tier assignment
-- [ ] `cli.py` - `skills-radar serve | index | list | doctor`
-- [ ] Manual smoke test against the user's `~/.claude/skills/`
+- [x] `pyproject.toml` + package skeleton
+- [x] `mcp_server.py` - FastMCP server with `search_skills` + `load_skill` tools (stdio transport)
+- [x] `indexer.py` - scan SKILL.md from configured paths
+- [x] `embedder.py` - sentence-transformers default, swappable
+- [x] `store.py` - ChromaDB wrapper
+- [x] `sanitize.py` - basic sanitization + trust tier assignment
+- [x] `cli.py` - `skills-radar serve | index | list | doctor`
+- [x] Manual smoke test against the user's `~/.claude/skills/`
 
 ### Phase 2 - Production-ready (~4-5h)
-- [ ] `watcher.py` - watchdog-based hot-reload
-- [ ] Streamable HTTP transport
-- [ ] `mini_index.py` - auto-generate `~/.claude/SKILLS-INDEX.md`
-- [ ] Trust tier full implementation (registry, signing TBD)
-- [ ] Prompt-injection scanner (regex catalog + extensible)
-- [ ] `tests/` - pytest, ≥70% coverage on core
-- [ ] Docker image (pre-baked embedding model)
-- [ ] `docs/architecture.md`, `docs/threat-model.md`, `docs/onboarding.md`
+- [x] `watcher.py` - watchdog-based hot-reload
+- [x] Streamable HTTP transport
+- [x] `mini_index.py` - auto-generate `~/.claude/SKILLS-INDEX.md`
+- [x] Trust tier implementation (path-based; registry + signature-based promotion still TBD)
+- [x] Prompt-injection scanner - regex catalog runs; optional LLM scanner shipped as a module, not yet wired into ingest
+- [x] `tests/` - pytest, ≥70% coverage on core
+- [x] Docker image (pre-baked embedding model)
+- [x] `docs/architecture.md`, `docs/threat-model.md`, `docs/onboarding.md`
 
 ### Phase 3 - Public release (~3-4h)
-- [ ] `README.md` - user-facing onboarding
-- [ ] `CONTRIBUTING.md`
-- [ ] GitHub Actions: lint + test + publish to PyPI on tag
-- [ ] PyPI package
-- [ ] `examples/` - sample skills, Claude Code config snippet, Cursor config
-- [ ] **From the Field bonus episode** - EN + PL drafts (per memory rule)
+- [x] `README.md` - user-facing onboarding
+- [x] `CONTRIBUTING.md`
+- [x] GitHub Actions: lint + test + publish to PyPI on tag
+- [x] PyPI package
+- [ ] `examples/` - sample skills, Claude Code config snippet, Cursor config _(partial: config snippet shipped; sample skills + Cursor config not yet added)_
+- [x] **From the Field bonus episode** - EN + PL drafts (per memory rule)
 - [ ] Public announcement + LinkedIn post
 
 ### Phase 4 - Polish (post-launch)
-- [ ] Stats / telemetry (local, opt-in)
-- [ ] TUI dashboard (`skills-radar tui`)
-- [ ] MLX embedder (Mac only)
-- [ ] Voyage / OpenAI embedder backends
-- [ ] Auto-discovery from GitHub repos (e.g., `awesome-agent-skills`)
+- [x] Stats / telemetry (local, opt-in)
+- [x] TUI dashboard (`skills-radar tui`)
+- [x] MLX embedder (Mac only)
+- [x] Voyage / OpenAI embedder backends
+- [x] Auto-discovery from GitHub repos (e.g., `awesome-agent-skills`)
 
 ## 9. CLI Surface (final)
 
