@@ -113,7 +113,7 @@ Every ingested SKILL.md is treated as **adversarial input**. Skills are arbitrar
 | **TRUSTED** | Bundled `.skills-radar/builtin/` (project-vetted) | Pass through |
 | **VERIFIED** | Signed registry (TBD), `~/.claude/plugins/cache/claude-plugins-official/` | Light sanitization, log |
 | **USER** | `~/.claude/skills/`, project `.claude/skills/` (your own files) | Trusted local - light sanitization |
-| **UNTRUSTED** | Anything else (e.g., dynamically registered paths) | Strict sanitization, blocked patterns rejected |
+| **UNTRUSTED** | Anything else (e.g., dynamically registered paths) | Strict sanitization; injection hits flag by default, rejected only with opt-in `sanitization.reject_untrusted_on_injection` |
 
 ### Sanitization on ingest (all tiers)
 
@@ -123,6 +123,8 @@ Every ingested SKILL.md is treated as **adversarial input**. Skills are arbitrar
 - Enforce size limits (default 64KB per SKILL.md)
 - Reject Windows path separators in `paths:` field
 - Strip live-execution syntax (`` !`...` ``) for non-Claude-Code clients (configurable per-client)
+
+**Flag, don't block (default).** Injection-pattern matches FLAG, they do not reject: regex-catalog hits emit `warnings` on the record (body passes through untouched); XML override tags are redacted in place and warned. Either way the skill is still indexed and loadable - enforcement is the consuming agent's call via the `trust` and `warnings` fields returned by `load_skill`. Rationale: for the common USER-tier case (your own skills), silently dropping a legitimate skill on a regex false positive is worse than the threat. For untrusted sources there is an opt-in fail-closed path: `sanitization.reject_untrusted_on_injection: true` rejects UNTRUSTED-tier files carrying an injection warning at index time. USER / VERIFIED / TRUSTED are never auto-rejected.
 
 ### Trust signals exposed to agent
 

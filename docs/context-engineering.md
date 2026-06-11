@@ -41,6 +41,8 @@ Two MCP tools:
 
 Body is fetched only when needed. **No skill instructions live in context until the agent decides to act.**
 
+One constraint to be honest about: `search_skills` indexes `description` + `when_to_use` only - never the body. Retrieval quality is therefore bound to description quality: a skill with a vague one-liner stays hard to find no matter how good its body is. This is the same constraint native Claude Code operates under (it also selects skills from frontmatter descriptions), so a description written for one works for both - see [`writing-skills.md`](./writing-skills.md). The optional query rewriter and reranker exist to compensate on the query side (terse or multilingual queries, close-call rankings); they cannot rescue a description that says nothing.
+
 ## The math
 
 For a user with 80 skills:

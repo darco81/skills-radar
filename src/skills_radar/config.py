@@ -97,6 +97,11 @@ class SanitizationConfig(BaseModel):
     max_skill_size_kb: int = 64
     strip_xml_tags: bool = True
     strip_live_exec: bool = False  # Only strip for non-Claude-Code clients
+    # Opt-in fail-closed gate: reject UNTRUSTED skills whose body trips an
+    # injection pattern at index time, instead of indexing them with warnings.
+    # Default False = warn-don't-block (a regex false positive must not
+    # silently drop a skill). USER/VERIFIED/TRUSTED are never auto-rejected.
+    reject_untrusted_on_injection: bool = False
     llm_scanner: LLMScannerConfig = Field(default_factory=LLMScannerConfig)
 
 

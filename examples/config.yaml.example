@@ -66,6 +66,10 @@ sanitization:
   # Set true ONLY if serving non-Claude-Code clients (Cursor, custom agents).
   # Claude Code expects to handle !`...` syntax itself.
   strip_live_exec: false
+  # Fail-closed gate: reject UNTRUSTED skills whose body trips an injection
+  # pattern, instead of indexing them with warnings (the default).
+  # USER/VERIFIED/TRUSTED are never auto-rejected.
+  reject_untrusted_on_injection: false
 
 telemetry:
   enabled: false                                # opt-in; no remote, ever

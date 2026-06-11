@@ -4,18 +4,9 @@ All notable changes to skills-radar are documented in this file. Format follows 
 
 ## [Unreleased]
 
-### Planned for v0.3.0 (first public)
-- PyPI publish via GitHub Actions release workflow
-- Portfolio standalone case study (EN, ~1500-3000 words) at portfolio.sdet.it
-- README install GIF / demo screencast
+### Changed - honest threat model: flag by default, opt-in hard gate
 
-### Planned for v0.4.0 / post-1.0
-- Native MLX reranker (today: Ollama backend; MLX placeholder raises NotImplementedError)
-- Voyage / OpenAI embedder backends
-- FAISS store backend (zero deps fallback)
-- Auto-discovery from GitHub repos (e.g., `awesome-agent-skills`)
-- Crypto signing for VERIFIED tier
-- LLM-based prompt-injection scanner (extends regex catalog)
+SPEC §5 claimed UNTRUSTED skills get "blocked patterns rejected" - the code never rejected anything; injection matches only append warnings. Docs (SPEC §5, README, `docs/threat-model.md`) now state the warn-don't-block default explicitly: enforcement is the consuming agent's call via the `trust` + `warnings` fields from `load_skill`. New opt-in config `sanitization.reject_untrusted_on_injection` (default `false`) adds a real fail-closed path: UNTRUSTED-tier files carrying an injection warning are rejected at index time (reindex + watcher upsert; never `load_record`, never USER/VERIFIED/TRUSTED). Also fixed the dangling `AppContext.reindex` docstring (was a no-op literal after the timing setup), reconciled the README with reality (status line + phase table v0.1 → v0.6.1a0 with F1-F4 shipped; license "MIT (planned)" → MIT; backend `[planned]` markers cleared - MLX/OpenAI/Voyage embedders and Qdrant/FAISS stores all shipped), retired the stale "Planned for v0.3.0 / v0.4.0" subsections here (every shipped item is documented in its release section; the PyPI publish now has its own v0.4.0a1 entry below), and documented the description-quality retrieval constraint in `docs/context-engineering.md`. Tests: `tests/test_reject_untrusted.py` (gate on/off, USER tier never rejected).
 
 ## [v0.6.1a0] - 2026-06-10
 
@@ -55,6 +46,22 @@ Adopted from analysis of Nous Research's Hermes Agent skill routing (`agent/prom
 
 - **Qdrant list-metadata crash** - `_csv_to_list` (mcp_server, mini_index) and `_split_tags` (app) assumed ChromaDB's CSV-string coercion; Qdrant keeps lists as-is in payload, so any skill with `hub-tags` would crash `search_skills` tag handling on the Qdrant backend. All three helpers now accept both shapes. Review pass caught a fourth instance: `skills-radar list --tag` (cli.py) had the same raw `.split(",")` - now routed through `_split_tags`.
 - **Bare-scalar conditional fields fail-closed** - `platforms: macos` (natural YAML, not a list) was silently treated as "no constraint"; scalars now coerce to single-item lists so the gate actually gates.
+
+## [v0.4.0a2] - 2026-05-09
+
+### Changed
+- `__version__` is read from installed package metadata - `pyproject.toml` is the single source of truth for the version.
+
+## [v0.4.0a1] - 2026-05-09
+
+### Added
+- **First public PyPI publish** - release workflow (`.github/workflows/publish.yml`, trusted publishing) ships the package on tag. Closes the "PyPI publish via GitHub Actions" item planned since v0.3.0.
+
+### Fixed
+- CI ruff S607 - git subprocess invoked via absolute path resolved with `shutil.which`.
+
+### Changed
+- GitHub owner renamed `dar-kow` → `darco81` (canonical login) in repo URLs and PyPI metadata.
 
 ## [v0.4.0a0] - 2026-05-09
 
@@ -161,8 +168,6 @@ All 8 backlog items shipped in a single alpha:
 
 ## [v0.2.0a0] - 2026-05-09
 
-## [v0.2.0a0] - 2026-05-09
-
 ### Added
 - **Hot reload** - `watcher.py` with `watchdog` file observer. Created/modified/deleted/moved SKILL.md events trigger debounced (250ms) single-record re-index. Coalesces editor save bursts.
 - **Mini-index generator** - `mini_index.py` writes a compact `~/.claude/SKILLS-INDEX.md` (Tier 1 of Two-Tier Discovery). Group by `hub-tags` (default) or `scope`. With 69 skills indexed, output is ~1.9k tokens vs ~6k native (68% reduction).
@@ -193,7 +198,12 @@ All 8 backlog items shipped in a single alpha:
 - SPEC.md (~2300 words, 15 sections), README.md, architecture deep-dive, onboarding 8-step guide.
 - Verified working: 60 skills indexed (after dedup); `wcag accessibility audit` → a11y-orchestrator (0.79); `memory leak in my Vue app` → perf-vue-runtime (0.48).
 
-[Unreleased]: https://github.com/darco81/skills-radar/compare/v0.4.0a0...HEAD
+[Unreleased]: https://github.com/darco81/skills-radar/compare/v0.6.1a0...HEAD
+[v0.6.1a0]: https://github.com/darco81/skills-radar/compare/v0.6.0a0...v0.6.1a0
+[v0.6.0a0]: https://github.com/darco81/skills-radar/compare/v0.5.0a0...v0.6.0a0
+[v0.5.0a0]: https://github.com/darco81/skills-radar/compare/v0.4.0a2...v0.5.0a0
+[v0.4.0a2]: https://github.com/darco81/skills-radar/compare/v0.4.0a1...v0.4.0a2
+[v0.4.0a1]: https://github.com/darco81/skills-radar/compare/v0.4.0a0...v0.4.0a1
 [v0.4.0a0]: https://github.com/darco81/skills-radar/compare/v0.3.0a2...v0.4.0a0
 [v0.3.0a2]: https://github.com/darco81/skills-radar/compare/v0.3.0a1...v0.3.0a2
 [v0.3.0a1]: https://github.com/darco81/skills-radar/compare/v0.3.0a0...v0.3.0a1

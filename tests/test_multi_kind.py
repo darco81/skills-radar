@@ -129,7 +129,9 @@ class TestRootAnchoring:
         assert classify_md_path(p) == "command"
 
     def test_uppercase_stem_lowercased(self, tmp_path):
-        p = _write(tmp_path / "agents" / "QA-Reporter.md", AGENT_MD.replace("name: qa-reporter\n", ""))
+        p = _write(
+            tmp_path / "agents" / "QA-Reporter.md", AGENT_MD.replace("name: qa-reporter\n", "")
+        )
         rec = parse_skill_file(p, trusted_paths=[tmp_path], kind="agent")
         assert rec is not None
         assert rec.name == "qa-reporter"
@@ -140,12 +142,15 @@ class TestWatcherBackend:
         import pytest
 
         pytest.importorskip("watchdog")
-        from skills_radar.config import Config, WatcherConfig
-        from skills_radar.watcher import WatcherService
         from watchdog.observers.polling import PollingObserver
 
+        from skills_radar.config import Config, WatcherConfig
+        from skills_radar.watcher import WatcherService
+
         class _StubApp:
-            config = Config(watcher=WatcherConfig(enabled=True, backend="polling", poll_interval_s=5))
+            config = Config(
+                watcher=WatcherConfig(enabled=True, backend="polling", poll_interval_s=5)
+            )
 
         svc = WatcherService(_StubApp())
         assert isinstance(svc._make_observer(), PollingObserver)
@@ -154,9 +159,10 @@ class TestWatcherBackend:
         import pytest
 
         pytest.importorskip("watchdog")
+        from watchdog.observers.polling import PollingObserver
+
         from skills_radar.config import Config
         from skills_radar.watcher import WatcherService
-        from watchdog.observers.polling import PollingObserver
 
         class _StubApp:
             config = Config()
@@ -166,6 +172,7 @@ class TestWatcherBackend:
 
     def test_unknown_backend_rejected(self):
         import pytest
+
         from skills_radar.config import WatcherConfig
 
         with pytest.raises(ValueError, match="watcher.backend"):
@@ -174,7 +181,9 @@ class TestWatcherBackend:
 
 class TestDiscovery:
     def test_find_resource_files_mixed_tree(self, tmp_path):
-        _write(tmp_path / "skills" / "alpha" / "SKILL.md", "---\nname: alpha\ndescription: a\n---\nx")
+        _write(
+            tmp_path / "skills" / "alpha" / "SKILL.md", "---\nname: alpha\ndescription: a\n---\nx"
+        )
         _write(tmp_path / "agents" / "beta.md", AGENT_MD)
         _write(tmp_path / "commands" / "gamma.md", COMMAND_LEGACY)
         _write(tmp_path / "README.md", "# ignored")

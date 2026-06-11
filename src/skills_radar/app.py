@@ -93,10 +93,10 @@ class AppContext:
         )
 
     def reindex(self, *, rebuild: bool = False) -> int:
+        """Scan paths and (re)index all SKILL.md files. Returns count indexed."""
         import time as _time
 
         _t0 = _time.perf_counter()
-        """Scan paths and (re)index all SKILL.md files. Returns count indexed."""
         if rebuild:
             self.store.reset()
 
@@ -108,6 +108,9 @@ class AppContext:
                 trusted_paths=self.config.trust.trusted_paths,
                 max_size_kb=self.config.sanitization.max_skill_size_kb,
                 strip_live_exec=self.config.sanitization.strip_live_exec,
+                reject_untrusted_on_injection=(
+                    self.config.sanitization.reject_untrusted_on_injection
+                ),
                 kind=kind,
             )
             if rec is None:
@@ -247,6 +250,7 @@ class AppContext:
             trusted_paths=self.config.trust.trusted_paths,
             max_size_kb=self.config.sanitization.max_skill_size_kb,
             strip_live_exec=self.config.sanitization.strip_live_exec,
+            reject_untrusted_on_injection=self.config.sanitization.reject_untrusted_on_injection,
             kind=kind,
         )
         if rec is None:

@@ -7,7 +7,7 @@
 
 **Why this exists:** Anthropic shipped Tool Search for MCP tools in late 2025 (85% token reduction, +8.6% accuracy on Opus 4.5). They haven't shipped the equivalent for Skills yet. With 80+ skills across personal, project, and plugin scopes, your `/doctor` is probably bleeding 5-10k tokens before you type a word. This fixes that.
 
-> **Status:** 🚧 v0.1 in active development. Spec: [`SPEC.md`](./SPEC.md). MVP target: ~3-4h after spec approval.
+> **Status:** 🚀 v0.6.1a0 (alpha) on [PyPI](https://pypi.org/project/skills-radar/). Phases F1-F4 shipped; feature work continues (conditional activation, multi-kind index, polling watcher). Spec: [`SPEC.md`](./SPEC.md).
 
 ---
 
@@ -98,9 +98,9 @@ Result: from ~6k tokens loaded upfront to ~1k tokens + on-demand. **~83% savings
 
 - 🔍 **Hybrid retrieval** - BM25 (lexical) + dense embeddings (semantic), 70/30 by default
 - 🔥 **Hot reload** - drop a SKILL.md, indexed in <1s via `watchdog` (no Claude restart); for Docker bind mounts on macOS/Windows set `watcher.backend: polling` - VirtioFS doesn't propagate inotify into containers
-- 🛡️ **Threat model day-one** - trust tiers (TRUSTED / VERIFIED / USER / UNTRUSTED), prompt-injection scanning, size limits, XML-injection stripping
+- 🛡️ **Threat model day-one** - trust tiers (TRUSTED / VERIFIED / USER / UNTRUSTED), prompt-injection scanning, size limits, XML-injection stripping. Scanning **flags, it doesn't block**: injection matches surface as `warnings` (alongside `trust`) in `load_skill` responses, and enforcement is the consuming agent's call. Opt-in `sanitization.reject_untrusted_on_injection: true` hard-rejects flagged UNTRUSTED sources at index time; USER / VERIFIED / TRUSTED are never auto-rejected
 - 🪶 **Light by default** - sentence-transformers (90MB) + ChromaDB (zero deps)
-- 🔌 **Pluggable** - swap embedder (sentence-transformers, MLX [planned], Voyage [planned], OpenAI [planned]); swap store (ChromaDB default, Qdrant [planned])
+- 🔌 **Pluggable** - swap embedder (sentence-transformers default, MLX, OpenAI, Voyage); swap store (ChromaDB default, Qdrant, FAISS)
 - 🌐 **Multi-client** - Claude Code, Cursor, Claude Desktop, custom MCP agents
 - 📡 **Streamable HTTP** transport (`stateless_http=True, json_response=True`) for production; stdio for local dev
 - 🤖 **Optional local-LLM query rewriter** (Ollama) - rewrites ambiguous queries into richer keyword phrases before embedding
@@ -221,8 +221,9 @@ Resilient by design: any HTTP error, timeout, or parse failure falls back to the
 | Spec & architecture | ✅ Done | - |
 | F1 - MVP (search + load, in-mem) | ✅ Done | `v0.1.0a0` |
 | F2 - Production (hot-reload, HTTP, threat model, Docker, integration tests) | ✅ Done | `v0.2.0` |
-| F3 - Public release (PyPI, GitHub Actions, FtF post) | 🔄 In progress | - |
-| F4 - Polish (MLX backend, telemetry, TUI, more backends) | ⏳ Backlog | post-1.0 |
+| F3 - Public release (PyPI, GitHub Actions, FtF post) | ✅ Done | `v0.4.0a1` (first PyPI publish) |
+| F4 - Polish (MLX backend, telemetry, TUI, more backends) | ✅ Done | `v0.3.0a0`-`v0.4.0a0` |
+| Post-F4 - conditional activation, multi-kind index, polling watcher | ✅ Shipped | `v0.5.0a0`-`v0.6.1a0` |
 
 See [`SPEC.md`](./SPEC.md) for full PRD. See [`docs/`](./docs/) for architecture deep dive, threat model, writing-skills guide, context engineering rationale, and onboarding.
 
@@ -244,7 +245,7 @@ What `skills-radar` does differently: 2-tool surface (mirroring Anthropic's patt
 
 ## License
 
-MIT (planned). See `LICENSE` once published.
+MIT - see [`LICENSE`](./LICENSE).
 
 ---
 

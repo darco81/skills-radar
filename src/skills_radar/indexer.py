@@ -66,6 +66,7 @@ def parse_skill_file(
     trusted_paths: list[Path],
     max_size_kb: int = 64,
     strip_live_exec: bool = False,
+    reject_untrusted_on_injection: bool = False,
     kind: str = "skill",
 ) -> SkillRecord | None:
     """Parse one resource file (SKILL.md / agent .md / command .md).
@@ -74,6 +75,10 @@ def parse_skill_file(
     skills and agents require frontmatter with a description; commands
     may have no frontmatter at all (legacy format) - name then comes
     from the filename and description from the first body line.
+
+    Injection-pattern matches normally only flag (warnings on the record);
+    with `reject_untrusted_on_injection` an UNTRUSTED-tier file carrying an
+    injection warning is rejected instead. Other tiers are never rejected.
     """
     path = path.expanduser().resolve()
     try:
@@ -138,6 +143,15 @@ def parse_skill_file(
     body_sanitized, warnings = sanitize_body(body, strip_live_exec=strip_live_exec)
 
     trust = determine_trust_tier(path, trusted_paths)
+    if reject_untrusted_on_injection and trust is TrustTier.UNTRUSTED:
+        injection_hits = [w for w in warnings if _is_injection_warning(w)]
+        if injection_hits:
+            logger.warning(
+                "Rejecting UNTRUSTED resource with injection warnings %s: %s",
+                injection_hits,
+                path,
+            )
+            return None
     scope = _scope_from_path(path)
     bundled_files = _collect_bundled_files(path) if kind == "skill" else []
 
@@ -160,6 +174,14 @@ def parse_skill_file(
         platforms=platforms,
         requires_tools=requires_tools,
         fallback_for_tools=fallback_for_tools,
+    )
+
+
+def _is_injection_warning(warning: str) -> bool:
+    """True for sanitize_body warnings that indicate an injection hit
+    (as opposed to e.g. live_exec_syntax_stripped)."""
+    return (
+        warning.startswith("injection_pattern_detected") or warning == "xml_injection_tags_detected"
     )
 
 

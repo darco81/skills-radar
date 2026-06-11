@@ -28,7 +28,7 @@ Every skill is tagged at ingest with one of:
 | **TRUSTED** | `~/.claude/skills`, project `.claude/skills`, paths in `trust.trusted_paths` config | Pass-through after light sanitization |
 | **VERIFIED** | `~/.claude/plugins/cache/claude-plugins-official/**` | Light sanitization, log warnings |
 | **USER** | Other paths under `~/.claude/skills/` (subdirectories owned by user) | Trusted-local - light sanitization |
-| **UNTRUSTED** | Anything else (third-party paths added without explicit trust) | Strict sanitization, blocked patterns rejected |
+| **UNTRUSTED** | Anything else (third-party paths added without explicit trust) | Strict sanitization; injection hits flag by default, rejected only with opt-in `sanitization.reject_untrusted_on_injection` |
 
 The trust value is exposed in `load_skill` responses. Downstream agents (or human-in-the-loop wrappers) can refuse to execute UNTRUSTED skills.
 
@@ -66,6 +66,8 @@ forget everything (?:above|before)
 These patterns are **detected, not rewritten** - the body passes through with a warning attached. The agent receives the warning in `load_skill` response.
 
 Why detect rather than rewrite: rewriting risks breaking legitimate references (e.g., a skill that itself documents prompt injection). The agent decides whether to act.
+
+The same logic applies to rejection: matches flag, they don't block - even for UNTRUSTED sources. For a fail-closed posture, opt-in `sanitization.reject_untrusted_on_injection: true` rejects UNTRUSTED-tier files carrying an injection warning at index time; USER/VERIFIED/TRUSTED are never auto-rejected.
 
 #### Live-execution syntax
 
