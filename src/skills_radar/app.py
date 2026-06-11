@@ -217,9 +217,7 @@ class AppContext:
 
         if kind:
             wanted_kind = kind.strip().lower()
-            fused = [
-                r for r in fused if r["metadata"].get("kind", "skill") == wanted_kind
-            ]
+            fused = [r for r in fused if r["metadata"].get("kind", "skill") == wanted_kind]
 
         fused.sort(key=lambda r: r["score"], reverse=True)
 

@@ -49,10 +49,7 @@ class TestClassify:
         assert classify_md_path(Path("/skills/personal-extra/agents/qa.md")) == "agent"
 
     def test_command_nested(self):
-        assert (
-            classify_md_path(Path("/skills/projects/x/commands/perf/report.md"))
-            == "command"
-        )
+        assert classify_md_path(Path("/skills/projects/x/commands/perf/report.md")) == "command"
 
     def test_plain_md_ignored(self):
         assert classify_md_path(Path("/skills/projects/x/notes/readme.md")) is None

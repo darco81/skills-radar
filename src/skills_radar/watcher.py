@@ -116,9 +116,7 @@ class WatcherService:
         if wcfg.backend == "polling":
             from watchdog.observers.polling import PollingObserver
 
-            logger.info(
-                "Watcher backend: polling (interval %.0fs)", wcfg.poll_interval_s
-            )
+            logger.info("Watcher backend: polling (interval %.0fs)", wcfg.poll_interval_s)
             return PollingObserver(timeout=wcfg.poll_interval_s)
         logger.info("Watcher backend: native")
         return Observer()

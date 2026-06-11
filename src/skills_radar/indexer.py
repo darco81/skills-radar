@@ -345,10 +345,15 @@ def _scope_from_path(path: Path) -> str:
 
     parts = posix.split("/")
     for i, part in enumerate(parts):
-        if part == ".claude" and i + 1 < len(parts) and parts[i + 1] in (
-            "skills",
-            "agents",
-            "commands",
+        if (
+            part == ".claude"
+            and i + 1 < len(parts)
+            and parts[i + 1]
+            in (
+                "skills",
+                "agents",
+                "commands",
+            )
         ):
             project_root = "/".join(parts[:i])
             return f"project:{project_root}"
