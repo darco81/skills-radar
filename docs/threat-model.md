@@ -83,7 +83,7 @@ UTF-8 byte length per SKILL.md is capped at 64KB by default (`sanitization.max_s
 
 - **No execution** - skills-radar never runs commands, never imports skill code, never resolves file references inside SKILL.md. We only index and serve.
 - **No automatic policy** - we surface trust tier and warnings; the agent decides whether to honor them.
-- **No cryptographic signing yet** - VERIFIED tier is path-based, not signature-based. Crypto signing is on the F4 backlog (see SPEC §8).
+- **No signature-based trust yet** - VERIFIED tier is path-based. Ed25519 signing primitives shipped (`signing.py`: sign/verify + `SKILL.md.sig` sidecars), but nothing wires them into trust-tier assignment yet.
 
 ## Recommendations for downstream agents
 
@@ -95,12 +95,11 @@ If you're building an agent on top of skills-radar:
 4. **Don't auto-execute on `disable-model-invocation: true` skills.** Even if the user names them, treat as user-only.
 5. **Check `disable_model_invocation` field** before relying on a search hit.
 
-## Future hardening (F4 backlog)
+## Future hardening
 
-- Cryptographic signing for VERIFIED tier (skills signed by trusted keys)
-- LLM-based prompt-injection scanning (e.g., a small local model classifies suspicious bodies)
+- Wire `signing.py` (Ed25519, shipped) into trust-tier assignment so signed skills promote to VERIFIED
+- Invoke the LLM injection scanner from the ingest pipeline - the classifier and its backends (`none` / `ollama` / `mlx`) shipped and `sanitization.llm_scanner` config exists, but nothing calls it during indexing yet
 - Anomaly detection on skill body diffs (sudden 10x size growth or new injection patterns flagged)
-- Sandbox `bundled_files` referenced from SKILL.md (today they're just enumerated)
 - Audit log of all ingest events with hashes (for forensics if a malicious skill slips through)
 
 ## Reporting a security issue

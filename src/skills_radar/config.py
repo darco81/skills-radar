@@ -21,7 +21,7 @@ class EmbedderConfig(BaseModel):
 
 
 class StoreConfig(BaseModel):
-    backend: str = "chromadb"  # 'chromadb' | 'qdrant'
+    backend: str = "chromadb"  # 'chromadb' | 'qdrant' | 'faiss'
     path: Path = Field(default_factory=lambda: _expand("~/.local/share/skills-radar/store"))
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection: str = "skills_v1"
@@ -42,7 +42,7 @@ class TransportConfig(BaseModel):
 
 
 class RewriterConfig(BaseModel):
-    backend: str = "none"  # 'none' | 'ollama'
+    backend: str = "none"  # 'none' | 'ollama' | 'mlx'
     model: str = "gemma4:e4b"
     url: str = "http://localhost:11434"
     timeout: float = 5.0

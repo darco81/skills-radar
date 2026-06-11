@@ -5,7 +5,7 @@ Off by default. Opt in via config.retrieval.reranker.enabled.
 Backends:
 - `none`     - passthrough (default)
 - `ollama`   - local LLM scores 0-10 per (query, description) pair
-- `mlx`      - placeholder for native MLX reranker (F5+ backlog)
+- `mlx`      - Apple Silicon native, single-pass batch scoring (Mac arm64 only)
 
 Pattern: hybrid retrieval pulls a wider candidate set (top-20 by default
 when reranker is on), reranker scores each, top-N is returned. Adds
