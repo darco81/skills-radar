@@ -39,6 +39,22 @@ RERANK_SYSTEM_PROMPT = (
 _INTEGER_RE = re.compile(r"\b(10|[0-9])\b")
 
 
+def _candidate_text(cand: dict[str, Any]) -> str:
+    """Text a reranker scores against.
+
+    Prefers `document` (the full indexed text = description + when_to_use) so
+    the reranker sees the same signal the embedder and BM25 indexed. Falls
+    back to metadata.description only when document is absent. Scoring
+    description-only made when_to_use trigger phrases invisible to ranking
+    even though they drive first-stage retrieval.
+    """
+    document = cand.get("document")
+    if isinstance(document, str) and document:
+        return document
+    description = (cand.get("metadata") or {}).get("description", "")
+    return description if isinstance(description, str) else ""
+
+
 class Reranker(Protocol):
     def rerank(self, query: str, candidates: list[dict[str, Any]]) -> list[dict[str, Any]]: ...
 
@@ -102,10 +118,7 @@ class OllamaReranker:
             t0 = time.perf_counter()
             scored: list[tuple[float, dict[str, Any]]] = []
             for cand in candidates:
-                desc = (cand.get("metadata") or {}).get("description", "") or cand.get(
-                    "document", ""
-                )
-                score = self._score_one(query, desc[:500])
+                score = self._score_one(query, _candidate_text(cand)[:500])
                 scored.append((score, cand))
             scored.sort(key=lambda x: x[0], reverse=True)
             elapsed = (time.perf_counter() - t0) * 1000.0
@@ -175,8 +188,7 @@ class MLXReranker:
     def _build_prompt(self, query: str, candidates: list[dict[str, Any]]) -> Any:  # noqa: ANN401 - tokenizer.apply_chat_template return type
         lines = [f"Query: {query}", "", "Candidates:"]
         for i, cand in enumerate(candidates, start=1):
-            desc = (cand.get("metadata") or {}).get("description", "") or cand.get("document", "")
-            desc_clip = desc[:240].replace("\n", " ")
+            desc_clip = _candidate_text(cand)[:240].replace("\n", " ")
             lines.append(f"{i}. {desc_clip}")
         lines.append("")
         lines.append("Score each (0-10):")
