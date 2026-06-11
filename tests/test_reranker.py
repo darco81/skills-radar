@@ -114,3 +114,35 @@ def test_ollama_rerank_handles_no_integer_in_response():
 def test_ollama_rerank_empty_candidates():
     r = OllamaReranker()
     assert r.rerank("q", []) == []
+
+
+def test_ollama_rerank_scores_full_indexed_text_including_when_to_use():
+    """Reranker must score the full `document` (description + when_to_use),
+    consistent with what the embedder and BM25 index. Regression: it scored
+    metadata.description only, so trigger phrases living in when_to_use were
+    invisible to the reranker even though they drive retrieval."""
+    r = OllamaReranker()
+    cands = [
+        {
+            "name": "perf-vue-runtime",
+            "score": 0.5,
+            "metadata": {"description": "Audit Vue runtime performance."},
+            # document = indexed_text = description + "\n\n" + when_to_use
+            "document": (
+                "Audit Vue runtime performance.\n\n"
+                "Triggers: 'watcher leak', 'INP regression', 'shallowRef'."
+            ),
+        },
+    ]
+    captured: list[str] = []
+
+    def _capture(req, *_a, **_k):
+        captured.append(req.data.decode("utf-8"))
+        return _FakeResp(json.dumps({"response": "8"}))
+
+    # Query is deliberately disjoint from the when_to_use phrases, so the
+    # only way "shallowRef" can appear in the scorer prompt is via `document`.
+    with patch("urllib.request.urlopen", side_effect=_capture):
+        r.rerank("my vue app feels janky", cands)
+
+    assert "shallowRef" in captured[0]
