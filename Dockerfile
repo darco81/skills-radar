@@ -19,7 +19,7 @@ COPY pyproject.toml README.md ./
 COPY src/ ./src/
 
 # Install the package + runtime deps into a clean prefix we can copy to runtime
-RUN uv pip install --system --no-cache .
+RUN uv pip install --system --no-cache '.[qdrant]'
 
 # Pre-bake the default embedding model (~90 MB) so production starts instant
 RUN python -c "from sentence_transformers import SentenceTransformer; \

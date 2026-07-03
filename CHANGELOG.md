@@ -4,6 +4,10 @@ All notable changes to skills-radar are documented in this file. Format follows 
 
 ## [Unreleased]
 
+### Added - Docker image ships the qdrant store extra
+
+The builder stage now installs `.[qdrant]` (`qdrant-client`), so the baked image can run either shipped store backend. The baked-config default stays `chromadb` — a fresh clone still boots standalone with zero external services. Machine-specific Qdrant wiring stays out of main per the compose-override split: `store.backend: qdrant` (+ URL/collection) belongs in the gitignored `config.local.yaml` mounted over the baked config, and the external network that reaches the Qdrant container belongs in the gitignored `docker-compose.override.yml`.
+
 ### Added - `requires_tools` naming convention + first real-world adoption (docs)
 
 The conditional-activation fields shipped in v0.5.0a0 (`metadata.radar.requires_tools` et al.) got their first production use: 24 resources annotated across `~/.claude/skills` (14, incl. the new flaky-analytics) and `~/.claude/agents` (10). `docs/conventions-requires-tools.md` now pins the naming convention set by that adoption — flat lowercase identifiers (binaries by name, stacks like `jarvis`/`sdet-brain`, MCP servers with `-mcp` suffix when ambiguous), HARD runtime deps only (optional and universal tools omitted, knowledge-only resources unannotated, domain mentions ≠ deps), and restates the expose-don't-filter contract (environment policy belongs to the consuming agent). Includes the full adoption table and the consumer-side future work (Hermes/CC downranking on missing tools).
