@@ -58,7 +58,11 @@ class TestClassify:
         assert classify_md_path(Path("/skills/x/node_modules/agents/a.md")) is None
 
     def test_plugin_cache_temp_clone_excluded(self):
-        for d in ("temp_git_1792914440058_en10nx", "temp_subdir_1792904257494_gqxekb.clone", "temp_local_1_ab"):
+        for d in (
+            "temp_git_1792914440058_en10nx",
+            "temp_subdir_1792904257494_gqxekb.clone",
+            "temp_local_1_ab",
+        ):
             assert classify_md_path(Path(f"/skills/plugins/{d}/skills/foo/SKILL.md")) is None
         assert classify_md_path(Path("/skills/personal/temp_notes/SKILL.md")) == "skill"
 
