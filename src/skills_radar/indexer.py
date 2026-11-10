@@ -296,8 +296,15 @@ _EXCLUDED_DIR_NAMES = frozenset(
 )
 
 
+# Claude Code leaves temp_git_* / temp_local_* / temp_subdir_* clones in the plugin
+# cache; they are unreferenced and shadow the installed copy via upsert-by-name.
+_PLUGIN_CACHE_TEMP_RE = re.compile(r"^temp_(git|local|subdir)_\d+_")
+
+
 def _is_in_excluded_dir(path: Path) -> bool:
-    return any(part in _EXCLUDED_DIR_NAMES for part in path.parts)
+    return any(
+        part in _EXCLUDED_DIR_NAMES or _PLUGIN_CACHE_TEMP_RE.match(part) for part in path.parts
+    )
 
 
 def _scope_from_path(path: Path) -> str:
