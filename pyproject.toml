@@ -34,7 +34,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "mcp>=1.12.4",
+    "mcp>=1.12.4,<2",
     "sentence-transformers>=3.0",
     "rank-bm25>=0.2.2",
     "chromadb>=0.5",
